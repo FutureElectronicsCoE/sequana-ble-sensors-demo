@@ -1,0 +1,12 @@
+.build
+projectfiles
+*.py*
+.hg*
+BUILD
+*.cbp
+*.depend
+*.layout
+obj
+bin
+*.tar.gz
+Makefile
