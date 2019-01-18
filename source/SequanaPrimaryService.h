@@ -33,9 +33,9 @@ typedef CharBuffer<Kx64Value, 12>   Kx64CharBuffer;
 
 typedef CharBuffer<Sps30Value, 12>  Sps30CharBuffer;
 
-//typedef CharBuffer<AirQValue, 12>   AirQCharBuffer;
 
-#if 1
+/** Converter to create BLE characteristic data from sensor data.
+ */
 class AirQCharBuffer : public CharBuffer<AirQValue, 10> {
 public:
     AirQCharBuffer& operator= (const AirQValue &val)
@@ -46,8 +46,10 @@ public:
         return *this;
     }
 };
-#endif
 
+
+/** Converter to create BLE characteristic data from sensor data.
+ */
 class ComboEnvCharBuffer : public CharBuffer<ComboEnvValue, 11> {
 public:
     ComboEnvCharBuffer& operator= (const ComboEnvValue &val)
@@ -70,7 +72,7 @@ public:
     static const UUID UUID_SEQUANA_PRIMARY_SERVICE;
 
 public:
-    /** Add the Sequana Primary Service to an existing BLE object, initializing it with all characteristics.
+    /** Add Sequana Primary Service to an existing BLE object, initializing it with all characteristics.
      * @param ble                   Reference to the BLE device.
      * @param accmag_sensor         Reference to KX64 sensor.
      * @param partmatter_sensor     Reference to PSP30 sensor.

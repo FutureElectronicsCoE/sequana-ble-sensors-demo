@@ -10,3 +10,4 @@ obj
 bin
 *.tar.gz
 Makefile
+mbed-os

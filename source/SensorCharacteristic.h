@@ -26,7 +26,7 @@
 namespace sequana {
 
 #if ENABLE_CHAR_TEMPLATE_DEBUG
-/** Get differentiating part of he characteristic long UUID.
+/** Get differentiating part of the characteristic long UUID.
  *
  * Helper function to help print useful part of the long UUID to identify characteristic.
  */
