@@ -1,6 +1,6 @@
 /* mbed Microcontroller Library
  * Copyright (c) 2006-2015 ARM Limited
- * Copyright (c) 2017-2018 Future Electronics
+ * Copyright (c) 2017-2019 Future Electronics
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,11 +37,14 @@ using namespace sequana;
 
 static const uint8_t AS7261_ADDR = 0x92;
 static const uint8_t HS3001_ADDR = 0x88;
-static const uint8_t ZMOD44XX_ADDR = 0x00;
+static const uint8_t ZMOD44XX_ADDR = 0x64;
+static const uint8_t SCD30_ADDR = 0xc2;
+
 
 I2C i2c1(I2C_SDA, I2C_SCL);
 SPI spi1(SPI_MOSI, SPI_MISO, SPI_CLK);
 RawSerial uart1(D1, D0);
+DigitalOut zmod1_reset(D3);
 
 #ifdef TARGET_FUTURE_SEQUANA
 const static char     DEVICE_NAME[] = "Sequana";
@@ -60,7 +63,7 @@ Kx64Sensor      kx64(spi1, P9_5);
 
 Sps30Sensor     sps30(uart1);
 ComboEnvSensor  combo(i2c1, AS7261_ADDR, HS3001_ADDR);
-AirQSensor      airq(i2c1, ZMOD44XX_ADDR);
+AirQSensor      airq(i2c1, ZMOD44XX_ADDR, zmod1_reset, SCD30_ADDR);
 
 
 class SequanaDemo : ble::Gap::EventHandler {

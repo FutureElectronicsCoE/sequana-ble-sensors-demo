@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Future Electronics
+ * Copyright (c) 2019 Future Electronics
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,7 +147,7 @@ public:
      *
      * @param serial RawSerial interface to use for communication.
      */
-    Sps30Sensor(RawSerial &serial) : _driver(serial) {}
+    Sps30Sensor(RawSerial &serial) : _driver(serial), _started(false) {}
 
     /** Schedule measurement process.
      */
@@ -156,6 +156,7 @@ public:
 protected:
     void updater();
     Sps30Driver _driver;
+    bool _started;
 };
 
 

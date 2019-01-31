@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Future Electronics
+ * Copyright (c) 2019 Future Electronics
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -296,8 +296,8 @@ Sps30Driver::Status Sps30Driver::send_start()
 Sps30Driver::Status Sps30Driver::read(Sps30Value& value)
 {
 #ifdef MBED_DEBUG
-    printf("SPS30 read: shdlc=%d, stat=%d, rxq= %lu, rxd=%lu, txd=%lu, stuff=%lu, bcnt=%lu\n", _shdlc_state, _status, rx_rq_stat, rx_done_stat, tx_done_stat, stuff_stat, total_bytes_stat);
-    printf("PM1.0 = %lu, PM2.5 = %lu, PM10 = %lu\n", _value.pm_1_0, _value.pm_2_5, _value.pm_10);
+//    printf("SPS30 read: shdlc=%d, stat=%d, rxq= %lu, rxd=%lu, txd=%lu, stuff=%lu, bcnt=%lu\n", _shdlc_state, _status, rx_rq_stat, rx_done_stat, tx_done_stat, stuff_stat, total_bytes_stat);
+//    printf("PM1.0 = %lu, PM2.5 = %lu, PM10 = %lu\n", _value.pm_1_0, _value.pm_2_5, _value.pm_10);
 #endif // MBED_DEBUG
     if (_status == STATUS_OK) {
         value = _value;
@@ -313,7 +313,9 @@ Sps30Driver::Sps30Driver(RawSerial &serial) :
     _shdlc_length(0),
     _status(STATUS_NOT_READY)
 {
-    _serial.write(sps30_command_start_bytes, sizeof(sps30_command_reset_bytes),NULL);
+    for (uint32_t i = 0; i < sizeof(sps30_command_reset_bytes); ++i) {
+        _serial.putc(sps30_command_reset_bytes[i]);
+    }
 }
 
 
@@ -323,10 +325,15 @@ void Sps30Sensor::updater()
 {
     Sps30Value val;
 
-    if (_driver.read(val) == Sps30Driver::STATUS_OK) {
-        update_value(val);
+    if (_started) {
+        if (_driver.read(val) == Sps30Driver::STATUS_OK) {
+            update_value(val);
+        }
+        _driver.request_new_frame();
+    } else {
+        _driver.send_start();
+        _started = true;
     }
-    _driver.request_new_frame();
 }
 
 
@@ -335,7 +342,6 @@ void Sps30Sensor::updater()
 void Sps30Sensor::start(EventQueue& ev_queue)
 {
     ev_queue.call_every(5000, callback(this, &Sps30Sensor::updater));
-    _driver.send_start();
 }
 
 

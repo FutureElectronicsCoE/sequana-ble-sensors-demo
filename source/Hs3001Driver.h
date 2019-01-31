@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018 Future Electronics
+ * Copyright (c) 2017-2019 Future Electronics
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ public:
      * @param bus I2C bus to use for communication
      * @param address I2C address to use
      */
-    Hs3001Driver(I2C& bus, uint8_t address) : _i2c(bus), _address(address), _last_h(0), _last_t(0) {};
+    Hs3001Driver(I2C& bus, uint8_t address) : _i2c(bus), _address(address){};
 
     /** Read measured values from sensor.
      */
@@ -50,8 +50,6 @@ public:
 protected:
     I2C&        _i2c;
     uint8_t     _address;
-    uint16_t    _last_h;
-    uint16_t    _last_t;
 };
 
 

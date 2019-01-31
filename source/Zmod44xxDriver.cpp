@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Future Electronics
+ * Copyright (c) 2018-2019 Future Electronics
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@
 
 // This is just a temporary stub driver.
 
-Zmod44xxDriver::Status Zmod44xxDriver::read(uint32_t &tvoc, uint32_t &eco2, float &iaq)
+Zmod44xxDriver::Status Zmod44xxDriver::read(uint32_t &tvoc, uint32_t &eco2, uint8_t &iaq)
 {
     tvoc = 1.0;
     eco2 = 200;
-    iaq = 1.0;
+    iaq = 1;
 
     return STATUS_OK;
 }

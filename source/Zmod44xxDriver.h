@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018 Future Electronics
+ * Copyright (c) 2018-2019 Future Electronics
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,15 +28,16 @@ public:
     };
 
 public:
-    Zmod44xxDriver(I2C& bus, uint8_t addr) : _i2c(bus), _addr(addr) {};
+    Zmod44xxDriver(I2C& bus, uint8_t addr, DigitalOut &reset_pin) : _i2c(bus), _addr(addr), _reset(reset_pin) {};
 
-    Status read(uint32_t &tvoc, uint32_t &eco2, float &iaq);
+    Status read(uint32_t &tvoc, uint32_t &eco2, uint8_t &iaq);
 
     void init_chip(void);
 
 protected:
     I2C&        _i2c;
     uint8_t     _addr;
+    DigitalOut& _reset;
 };
 
 

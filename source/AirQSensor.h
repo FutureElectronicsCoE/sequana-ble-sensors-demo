@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Future Electronics
+ * Copyright (c) 2019 Future Electronics
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@
 #include <mbed.h>
 #include "Sensor.h"
 #include "Zmod44xxDriver.h"
+#include "Scd30Driver.h"
+
 
 namespace sequana {
 
@@ -41,15 +43,17 @@ struct AirQValue {
  */
 class AirQSensor : public Sensor<AirQValue> {
 public:
-    AirQSensor(I2C &i2c, uint32_t zmod_addr) :
-        _zmod_driver(i2c, (uint8_t)zmod_addr)
+    AirQSensor(I2C &i2c, uint32_t zmod_addr, DigitalOut &zmod_reset, uint32_t scd_addr) :
+        _zmod_driver(i2c, (uint8_t)zmod_addr, zmod_reset),
+        _scd_driver(i2c, (uint8_t)scd_addr)
     {}
 
     virtual void start(EventQueue& ev_queue);
 
 protected:
     void updater();
-    Zmod44xxDriver _zmod_driver;
+    Zmod44xxDriver  _zmod_driver;
+    Scd30Driver     _scd_driver;
 };
 
 
