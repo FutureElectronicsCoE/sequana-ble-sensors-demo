@@ -116,10 +116,10 @@ Scd30Driver::Status Scd30Driver::_read_command(Command command, uint16_t *data, 
     /* verify data CRC and copy over the data */
     if (i2c_status == 0) {
 //        printf("sdc30_read (0x%04x): rcv data: ", command);
-        for (uint32_t i = 0; i < (3 * num_words); i++) {
-            printf(" %02x", buffer[i]);
-        }
-        printf("\n");
+//        for (uint32_t i = 0; i < (3 * num_words); i++) {
+//            printf(" %02x", buffer[i]);
+//        }
+//        printf("\n");
         for (uint32_t i = 0; i < num_words; ++i) {
             uint32_t base = i * 3;
             crc_t crc = crc_init();
