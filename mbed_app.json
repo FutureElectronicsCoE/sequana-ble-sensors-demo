@@ -3,7 +3,7 @@
         "FUTURE_SEQUANA": {
             "target.features_add": ["BLE"],
             "target.device_name": "CY8C6347BZI-BLD53M4",
-			"target.m0_core_img": "psoc63_m0_ble_controller_1.03.hex"
+			"target.m0_core_img": "psoc63_m0_ble_controller_1.05.hex"
 		},
 		"*": {
 				"platform.stdio-baud-rate": 115200,

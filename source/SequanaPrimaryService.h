@@ -40,9 +40,9 @@ class AirQCharBuffer : public CharBuffer<AirQValue, 10> {
 public:
     AirQCharBuffer& operator= (const AirQValue &val)
     {
-        memcpy(_bytes, &val.tvoc, 2);
+        memcpy(_bytes, &val.co2, 2);
         memcpy(_bytes+2, &val.eco2, 4);
-        memcpy(_bytes+6, &val.co2, 4);
+        memcpy(_bytes+6, &val.tvoc, 4);
         return *this;
     }
 };
