@@ -27,44 +27,20 @@
 #include "ble/gap/Gap.h"
 #include "SequanaPrimaryService.h"
 #include "kx64.h"
-#include "sps30.h"
-#include "ComboEnvSensor.h"
-#include "AirQSensor.h"
-
-#ifndef MCU_PSoC6_M0
 
 using namespace sequana;
 
-static const uint8_t AS7261_ADDR = 0x92;
-static const uint8_t HS3001_ADDR = 0x88;
-static const uint8_t ZMOD44XX_ADDR = 0x64;
-static const uint8_t SCD30_ADDR = 0xc2;
-
-
-I2C i2c1(I2C_SDA, I2C_SCL);
-SPI spi1(SPI_MOSI, SPI_MISO, SPI_CLK);
-RawSerial uart1(D1, D0);
-DigitalOut zmod1_reset(D3);
-
-#ifdef TARGET_FUTURE_SEQUANA
 const static char     DEVICE_NAME[] = "Sequana";
-#else
-const static char     DEVICE_NAME[] = "SequanaEnvShield";
-#endif  //TARGET_FUTURE_SEQUANA
 
-static sequana::PrimaryService *sequanaServicePtr;
+static sequana::PrimaryService *sequana_service_ptr;
 
 static EventQueue event_queue(/* event count */ 64 * EVENTS_EVENT_SIZE);
 
+/* Buses and I/O */
+SPI spi1(SPI_MOSI, SPI_MISO, SPI_CLK);
 
-#ifdef TARGET_FUTURE_SEQUANA
+/* Sensor declarations  */
 Kx64Sensor      kx64(spi1, P9_5);
-#endif //TARGET_FUTURE_SEQUANA
-
-Sps30Sensor     sps30(uart1);
-ComboEnvSensor  combo(i2c1, AS7261_ADDR, HS3001_ADDR);
-AirQSensor      airq(i2c1, ZMOD44XX_ADDR, zmod1_reset, SCD30_ADDR);
-
 
 class SequanaDemo : ble::Gap::EventHandler {
 public:
@@ -89,7 +65,7 @@ private:
     /** Callback triggered when the ble initialization process has finished */
     void on_init_complete(BLE::InitializationCompleteCallbackContext *params) {
         if (params->error != BLE_ERROR_NONE) {
-            printf("Ble initialization failed.");
+            printf("BLE initialization failed\n");
             return;
         }
 
@@ -107,7 +83,6 @@ private:
         );
 
         _adv_data_builder.setFlags();
-        //_adv_data_builder.setAppearance(ble::adv_data_appearance_t::GENERIC_HEART_RATE_SENSOR);
         _adv_data_builder.setLocalServiceList(mbed::make_Span(&_primary_uuid, 1));
         _adv_data_builder.setName(DEVICE_NAME);
 
@@ -119,7 +94,7 @@ private:
         );
 
         if (error) {
-            printf("_ble.gap().setAdvertisingParameters() failed\r\n");
+            printf("_ble.gap().setAdvertisingParameters() failed\n");
             return;
         }
 
@@ -129,7 +104,7 @@ private:
         );
 
         if (error) {
-            printf("_ble.gap().setAdvertisingPayload() failed\r\n");
+            printf("_ble.gap().setAdvertisingPayload() failed\n");
             return;
         }
 
@@ -138,13 +113,18 @@ private:
         error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
 
         if (error) {
-            printf("_ble.gap().startAdvertising() failed\r\n");
+            printf("_ble.gap().startAdvertising() failed\n");
             return;
         }
     }
 
     void blink(void) {
-        _led1 = !_led1;
+        /* LED will be on when a client is connected or will blink while advertising */
+        if (_connected) {
+            _led1 = 1;
+        } else {
+            _led1 = !_led1;
+        }
     }
 
 private:
@@ -162,18 +142,13 @@ private:
     }
 
 private:
-    BLE &_ble;
-    events::EventQueue &_event_queue;
-    DigitalOut _led1;
-
-    bool _connected;
-
-    UUID _primary_uuid;
-
-    uint8_t _hr_counter;
-    sequana::PrimaryService& _primary_service;
-
-    uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
+    BLE                         &_ble;
+    events::EventQueue          &_event_queue;
+    DigitalOut                  _led1;
+    bool                        _connected;
+    UUID                        _primary_uuid;
+    sequana::PrimaryService     &_primary_service;
+    uint8_t                     _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
     ble::AdvertisingDataBuilder _adv_data_builder;
 };
 
@@ -187,38 +162,25 @@ int main()
 {
     printf("Application processor started.\n\n");
 
-    // Initialize buses.
-    i2c1.frequency(100000);
-    spi1.format(8, 0);
+    /* Initialize bus(es) (placeholder) */
     spi1.frequency(1000000);
 
+    /* Setup BLE interface */
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(schedule_ble_events);
 
-    /* Setup primary service. */
-    sequanaServicePtr = new sequana::PrimaryService(ble,
-#ifdef TARGET_FUTURE_SEQUANA
-                                                    kx64,
-#endif //TARGET_FUTURE_SEQUANA
-                                                    sps30,
-                                                    combo,
-                                                    airq);
+    /* Setup primary service (placeholder). */
+    sequana_service_ptr = new sequana::PrimaryService(ble, kx64);
 
-    SequanaDemo demo(ble, event_queue, *sequanaServicePtr);
+    /* Start BLE / demo application */
+    SequanaDemo demo(ble, event_queue, *sequana_service_ptr);
     demo.start();
 
     printf("BLE started.\n\n");
 
-#ifdef TARGET_FUTURE_SEQUANA
-    kx64.start(event_queue);
-#endif //TARGET_FUTURE_SEQUANA
-    sps30.start(event_queue);
-    combo.start(event_queue);
-    airq.start(event_queue);
+    /* Process all events */
     event_queue.dispatch_forever();
 
     return 0;
 }
 
-
-#endif // MCU_PSoC6_M0

@@ -39,42 +39,17 @@ SingleCharParams accMagSensorCharacteristics[2] = {
     { &UUID_MAGNETOMETER_CHAR, 6, 6 }
 };
 
-SingleCharParams comboEnvSensorCharacteristics[2] = {
-    { &UUID_TEMPERATURE_CHAR, 0, 2 },
-    { &UUID_OTHER_ENV_CHAR, 2, 9 }
-};
-
 
 PrimaryService::PrimaryService(BLE &ble,
-#ifdef TARGET_FUTURE_SEQUANA
-                               Kx64Sensor &kx64,
-#endif //TARGET_FUTURE_SEQUANA
-                               Sps30Sensor &sps30, ComboEnvSensor &combo, AirQSensor &airq) :
+                               Kx64Sensor &kx64) :
         _ble(ble),
-#ifdef TARGET_FUTURE_SEQUANA
         _accMagSensorMeasurement(ble,
                                 accMagSensorCharacteristics,
-                                kx64),
-#endif //TARGET_FUTURE_SEQUANA
-        _particulateMatterMeasurement(ble,
-                                      UUID_PARTICULATE_MATTER_CHAR,
-                                      sps30),
-        _comboEnvMeasurement(ble,
-                             comboEnvSensorCharacteristics,
-                             combo),
-        _airQMeasurement(ble,
-                         UUID_AIR_QUALITY_CHAR,
-                         airq)
+                                kx64)
 {
         GattCharacteristic *sequanaChars[] = {
-#ifdef TARGET_FUTURE_SEQUANA
              _accMagSensorMeasurement.get_characteristic(0),
-             _accMagSensorMeasurement.get_characteristic(1),
-#endif //TARGET_FUTURE_SEQUANA
-             _particulateMatterMeasurement.get_characteristic(),
-             _comboEnvMeasurement.get_characteristic(0),
-             _comboEnvMeasurement.get_characteristic(1),
-             _airQMeasurement.get_characteristic()
+             _accMagSensorMeasurement.get_characteristic(1)
         };
 
         GattService sequanaService(UUID_SEQUANA_PRIMARY_SERVICE, sequanaChars, sizeof(sequanaChars) / sizeof(GattCharacteristic *));
