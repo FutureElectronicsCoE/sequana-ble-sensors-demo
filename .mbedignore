@@ -13,6 +13,7 @@ mbed-os/features/nfc/*
 mbed-os/features/storage/*
 mbed-os/features/unsupported/*
 mbed-os/components/*
+mbed-os/usb/*
 obj/*
 bin/*
 mbed-os-old/*
