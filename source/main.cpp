@@ -52,7 +52,7 @@ const static char     DEVICE_NAME[] = "Sequana";
 const static char     DEVICE_NAME[] = "SequanaEnvShield";
 #endif  //TARGET_FUTURE_SEQUANA
 
-static sequana::PrimaryService *sequanaServicePtr;
+static sequana::PrimaryService *sequana_service_ptr;
 
 static EventQueue event_queue(/* event count */ 64 * EVENTS_EVENT_SIZE);
 
@@ -64,7 +64,7 @@ Kx64Sensor      kx64(spi1, P9_5);
 Sps30Sensor     sps30(uart1);
 ComboEnvSensor  combo(i2c1, AS7261_ADDR, HS3001_ADDR);
 AirQSensor      airq(i2c1, ZMOD44XX_ADDR, zmod1_reset, SCD30_ADDR);
-
+RGBLedActuator  led_rgb;
 
 class SequanaDemo : ble::Gap::EventHandler {
 public:
@@ -92,6 +92,8 @@ private:
             printf("Ble initialization failed.");
             return;
         }
+
+        _ble.gattServer().onDataWritten(this, &SequanaDemo::on_data_written);
 
         print_mac_address();
 
@@ -141,6 +143,15 @@ private:
             printf("_ble.gap().startAdvertising() failed\r\n");
             return;
         }
+    }
+
+    /**
+     * This callback allows the SequanaService to receive updates to the RGB LED Characteristic.
+     *
+     * @param[in] params Information about the characterisitc being updated.
+     */
+    void on_data_written(const GattWriteCallbackParams *params) {
+        _primary_service.on_data_written(params);
     }
 
     void blink(void) {
@@ -196,15 +207,16 @@ int main()
     ble.onEventsToProcess(schedule_ble_events);
 
     /* Setup primary service. */
-    sequanaServicePtr = new sequana::PrimaryService(ble,
+    sequana_service_ptr = new sequana::PrimaryService(ble,
 #ifdef TARGET_FUTURE_SEQUANA
-                                                    kx64,
+                                                      kx64,
 #endif //TARGET_FUTURE_SEQUANA
-                                                    sps30,
-                                                    combo,
-                                                    airq);
+                                                      sps30,
+                                                      combo,
+                                                      airq,
+                                                      led_rgb);
 
-    SequanaDemo demo(ble, event_queue, *sequanaServicePtr);
+    SequanaDemo demo(ble, event_queue, *sequana_service_ptr);
     demo.start();
 
     printf("BLE started.\n\n");
@@ -215,6 +227,7 @@ int main()
     sps30.start(event_queue);
     combo.start(event_queue);
     airq.start(event_queue);
+    led_rgb.start(event_queue);
     event_queue.dispatch_forever();
 
     return 0;

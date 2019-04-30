@@ -21,10 +21,12 @@
 #include "UUID.h"
 #include "Sensor.h"
 #include "SensorCharacteristic.h"
+#include "ActuatorCharacteristic.h"
 #include "Kx64.h"
 #include "Sps30.h"
 #include "ComboEnvSensor.h"
 #include "AirQSensor.h"
+#include "RGBLedActuator.h"
 
 namespace sequana {
 
@@ -63,6 +65,22 @@ public:
     }
 };
 
+/** Converter to create BLE characteristic data from RGB Led data.
+ */
+class RGBLedCharBuffer : public CharBuffer<RGBLedValue, 6> {
+public:
+    RGBLedCharBuffer& operator= (const RGBLedValue &val)
+    {
+        _bytes[0] = 0;
+        _bytes[1] = val.color.r;
+        _bytes[2] = 0;
+        _bytes[3] = val.color.g;
+        _bytes[4] = 0;
+        _bytes[5] = val.color.b;
+        return *this;
+    }
+};
+
 
 
 /** Sequana BLE Primary Service. This service provides data obtained from Sequana and Sequana Environmental Shield sensors.
@@ -84,7 +102,10 @@ public:
 #endif //TARGET_FUTURE_SEQUANA
                    Sps30Sensor &partmatter_sensor,
                    ComboEnvSensor &combo_env_sensor,
-                   AirQSensor &airq_sensor );
+                   AirQSensor &airq_sensor,
+                   RGBLedActuator &rgb_led_actuator );
+
+    void on_data_written(const GattWriteCallbackParams *params);
 
 protected:
     BLE &_ble;
@@ -94,7 +115,7 @@ protected:
     SensorCharacteristic<Sps30CharBuffer, Sps30Value>               _particulateMatterMeasurement;
     SensorMultiCharacteristic<2, ComboEnvCharBuffer, ComboEnvValue> _comboEnvMeasurement;
     SensorCharacteristic<AirQCharBuffer, AirQValue>                 _airQMeasurement;
-
+    ActuatorCharacteristic<RGBLedCharBuffer, RGBLedValue>           _ledState;
 
 };
 

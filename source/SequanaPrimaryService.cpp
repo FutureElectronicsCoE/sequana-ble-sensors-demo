@@ -26,6 +26,7 @@ namespace sequana {
 const UUID PrimaryService::UUID_SEQUANA_PRIMARY_SERVICE("F79B4EB2-1B6E-41F2-8D65-D346B4EF5685");
 
 UUID UUID_TEMPERATURE_CHAR(GattCharacteristic::UUID_TEMPERATURE_CHAR);
+UUID UUID_RGB_LED_CHAR("F79B4EB4-1B6E-41F2-8D65-D346B4EF5685");
 UUID UUID_ACCELLEROMETER_CHAR("F79B4EB5-1B6E-41F2-8D65-D346B4EF5685");
 UUID UUID_MAGNETOMETER_CHAR("F79B4EB7-1B6E-41F2-8D65-D346B4EF5685");
 UUID UUID_AIR_QUALITY_CHAR("f79B4EBA-1B6E-41F2-8D65-D346B4EF5685");
@@ -49,7 +50,10 @@ PrimaryService::PrimaryService(BLE &ble,
 #ifdef TARGET_FUTURE_SEQUANA
                                Kx64Sensor &kx64,
 #endif //TARGET_FUTURE_SEQUANA
-                               Sps30Sensor &sps30, ComboEnvSensor &combo, AirQSensor &airq) :
+                               Sps30Sensor &sps30,
+                               ComboEnvSensor &combo,
+                               AirQSensor &airq,
+                               RGBLedActuator &rgb_led) :
         _ble(ble),
 #ifdef TARGET_FUTURE_SEQUANA
         _accMagSensorMeasurement(ble,
@@ -64,7 +68,10 @@ PrimaryService::PrimaryService(BLE &ble,
                              combo),
         _airQMeasurement(ble,
                          UUID_AIR_QUALITY_CHAR,
-                         airq)
+                         airq),
+        _ledState(ble,
+                  UUID_RGB_LED_CHAR,
+                  rgb_led)
 {
         GattCharacteristic *sequanaChars[] = {
 #ifdef TARGET_FUTURE_SEQUANA
@@ -74,13 +81,23 @@ PrimaryService::PrimaryService(BLE &ble,
              _particulateMatterMeasurement.get_characteristic(),
              _comboEnvMeasurement.get_characteristic(0),
              _comboEnvMeasurement.get_characteristic(1),
-             _airQMeasurement.get_characteristic()
+             _airQMeasurement.get_characteristic(),
+             _ledState.get_characteristic()
         };
 
         GattService sequanaService(UUID_SEQUANA_PRIMARY_SERVICE, sequanaChars, sizeof(sequanaChars) / sizeof(GattCharacteristic *));
 
         _ble.gattServer().addService(sequanaService);
 }
+
+void PrimaryService::on_data_written(const GattWriteCallbackParams *params)
+{
+    if ((params->handle == _ledState.get_characteristic()->getValueHandle()) && (params->len == 6)) {
+        RGBLedValue value(params->data);
+        _ledState.set_actuator(value);
+    }
+}
+
 
 } //namespace
 

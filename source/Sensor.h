@@ -76,7 +76,7 @@ protected:
         }
     }
 
-private:
+protected:
     ValueT              _value;
     Callback<void()>    _on_update;
 };

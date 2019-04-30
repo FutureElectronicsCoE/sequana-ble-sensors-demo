@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 20170-2018 Future Electronics
+ * Copyright (c) 2017-2018 Future Electronics
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,37 +77,38 @@ protected:
 
 /** Wrapper, holding BLE characteristic with its value buffer
  *  and processing value updates.
+ *  This class is a base providing generic processing from which
+ *  particular types are derived depending on the characteristic
+ *  attribute properties (read-only, read-write etc.).
  *
  * @param B Class representing characteristic's binary data buffer.
  * @param V Data type representing sensor value.
  */
-template <class B, class V> class SensorCharacteristic
+template <class B, class V> class BaseSensorCharacteristic
 {
-public:
+protected:
     /** Create BLE characteristic for a sensor.
      *
      * @param ble BLE interface
      * @param uuid characteristic UUID
      * @param sensor sensor interface
      */
-    SensorCharacteristic(BLE& ble, const UUID& uuid, Sensor<V>& sensor) :
+    BaseSensorCharacteristic(BLE& ble, const UUID& uuid, Sensor<V>& sensor) :
         _ble(ble),
-        _characteristic(uuid,
-                       &_buffer,
-                       GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_READ | GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_NOTIFY),
         _sensor(sensor)
     {
 #if ENABLE_CHAR_TEMPLATE_DEBUG
             printf("Registered char 0x%08lx\n", get_char_id(_characteristic));
 #endif // ENABLE_CHAR_TEMPLATE_DEBUG
-            _sensor.register_updater(callback(this, &SensorCharacteristic::update));
+            _sensor.register_updater(callback(this, &BaseSensorCharacteristic::update));
     }
 
+public:
     /** Get sensor characteristic.
      *
      * @returns pointer to sensor's GATT characteristic
      */
-    GattCharacteristic* get_characteristic() { return &_characteristic; }
+    virtual GattCharacteristic* get_characteristic() = 0;
 
     /** Get characteristic data pointer.
      *
@@ -136,19 +137,53 @@ protected:
             }
             printf("\n");
 #endif // ENABLE_CHAR_TEMPLATE_DEBUG
-            _ble.gattServer().write(_characteristic.getValueHandle(),
+            _ble.gattServer().write(get_characteristic()->getValueHandle(),
                                     _buffer.get_ptr(),
                                     _buffer.get_length());
         }
     }
 
-
 protected:
     BLE&                            _ble;
-    ReadOnlyGattCharacteristic<B>   _characteristic;
     B                               _buffer;
     Sensor<V>&                      _sensor;
 };
+
+
+/** Wrapper, holding BLE characteristic with its value buffer
+ *  and processing value updates.
+ *  Version for basic sensors i.e. read-only characteristics.
+ *
+ * @param B Class representing characteristic's binary data buffer.
+ * @param V Data type representing sensor value.
+ */
+template <class B, class V> class SensorCharacteristic : public BaseSensorCharacteristic<B, V>
+{
+public:
+    /** Create BLE characteristic for a sensor.
+     *
+     * @param ble BLE interface
+     * @param uuid characteristic UUID
+     * @param sensor sensor interface
+     */
+    SensorCharacteristic(BLE& ble, const UUID& uuid, Sensor<V>& sensor) :
+        BaseSensorCharacteristic<B, V>(ble, uuid, sensor),
+        _characteristic(uuid,
+                       reinterpret_cast<B*>(BaseSensorCharacteristic<B, V>::get_ptr()),
+                       GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_READ |
+                       GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_NOTIFY)
+    {}
+
+    /** Get sensor characteristic.
+     *
+     * @returns pointer to sensor's GATT characteristic
+     */
+    virtual GattCharacteristic* get_characteristic() { return &_characteristic; }
+
+protected:
+    ReadOnlyGattCharacteristic<B>   _characteristic;
+};
+
 
 
 /*****************************************************************************/
