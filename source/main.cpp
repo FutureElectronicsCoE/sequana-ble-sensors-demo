@@ -101,27 +101,34 @@ private:
     }
 
     void start_advertising() {
+        ble_error_t error;
+        /* */
+        error = _ble.gap().setDeviceName((const uint8_t *)DEVICE_NAME);
+        if (error) {
+            print_error(error, "_ble.gap().setDeviceName() failed\n");
+            return;
+        }
+
         /* Create advertising parameters and payload */
 
         ble::AdvertisingParameters adv_parameters(
             ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
             ble::adv_interval_t(ble::millisecond_t(1000))
         );
+        adv_parameters.setOwnAddressType(ble::own_address_type_t::RESOLVABLE_PRIVATE_ADDRESS_PUBLIC_FALLBACK);
 
         _adv_data_builder.setFlags();
-        //_adv_data_builder.setAppearance(ble::adv_data_appearance_t::GENERIC_HEART_RATE_SENSOR);
         _adv_data_builder.setLocalServiceList(mbed::make_Span(&_primary_uuid, 1));
         _adv_data_builder.setName(DEVICE_NAME);
 
         /* Setup advertising */
-
-        ble_error_t error = _ble.gap().setAdvertisingParameters(
+        error = _ble.gap().setAdvertisingParameters(
             ble::LEGACY_ADVERTISING_HANDLE,
             adv_parameters
         );
 
         if (error) {
-            printf("_ble.gap().setAdvertisingParameters() failed\r\n");
+            print_error(error, "_ble.gap().setAdvertisingParameters() failed\n");
             return;
         }
 
@@ -155,8 +162,13 @@ private:
     }
 
     void blink(void) {
-        _led1 = !_led1;
-    }
+        /* LED will be on when a client is connected or will blink while advertising */
+        if (_connected) {
+            _led1 = 1;
+        } else {
+            _led1 = !_led1;
+        }
+     }
 
 private:
     /* Event handler */
