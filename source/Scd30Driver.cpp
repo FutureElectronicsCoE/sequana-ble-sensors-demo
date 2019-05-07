@@ -155,7 +155,7 @@ Scd30Driver::Status Scd30Driver::read(uint32_t &co2)
     status = _read_command(CMD_GET_DATA_STATUS, data, 1);
 
     if (status == STATUS_OK) {
-        if (data[0] != 0) {
+        if (data[0] == DATA_STATUS_READY) {
             status = _read_command(CMD_READ_MEASUREMENT, data, 2);
         } else {
             status = STATUS_NOT_READY;

@@ -64,6 +64,11 @@ protected:
         CMD_SOFT_RESET          = 0xD304
     };
 
+    enum DataStatus {
+        DATA_STATUS_NOT_READY   = 0,
+        DATA_STATUS_READY       = 1
+    };
+
 protected:
     Status _write_command(Command command, uint16_t *args, uint8_t num_args);
     Status _read_command(Command command, uint16_t *data, uint8_t num_words);

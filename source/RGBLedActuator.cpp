@@ -57,7 +57,7 @@ void RGBLedActuator::start(EventQueue& ev_queue)
 int RGBLedActuator::set_value(RGBLedValue& value)
 {
     _value = value;
-    printf("RGB color received (R/G/B): %u, %u, %u\n", value.color.r, value.color.g, value.color.b);
+    //printf("RGB color received (R/G/B): %u, %u, %u\n", value.color.r, value.color.g, value.color.b);
 
     // Now set the new color for all LEDs that are on.
     if (_turning_on) {
