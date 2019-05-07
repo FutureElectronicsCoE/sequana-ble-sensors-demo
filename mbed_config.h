@@ -84,6 +84,7 @@
 #define MBED_CONF_RTOS_THREAD_STACK_SIZE                     4096        // set by library:rtos
 #define MBED_CONF_RTOS_TIMER_THREAD_STACK_SIZE               768         // set by library:rtos
 #define MBED_CONF_TARGET_BOOT_STACK_SIZE                     0x400       // set by library:rtos[*]
+#define MBED_CONF_TARGET_CONSOLE_UART                        1           // set by target:Target
 #define MBED_CONF_TARGET_DEEP_SLEEP_LATENCY                  0           // set by target:Target
 #define MBED_CONF_TARGET_MPU_ROM_END                         0x0fffffff  // set by target:Target
 #define MBED_CONF_TARGET_TICKLESS_FROM_US_TICKER             0           // set by target:Target
