@@ -1,0 +1,29 @@
+{
+    "name": "pdm-audio",
+    "config": {
+        "clock-divider": {
+            "help": "Determines PDM Mic clock frequency",
+            "value": 24
+        },
+        "oversample": {
+            "help": "Oversampling level, detrmines sampling frequency, valid values (even only) [32..254]",
+            "value": 64
+        },
+        "channel-mode": {
+            "help": "Channel to acquire: STEREO, LEFT, RIGHT",
+            "value": "RIGHT"
+        },
+        "data-bits": {
+            "help": "Number of data bits per channel sample [16, 18, 20, 24]",
+            "value": 24
+        },
+        "high-pass-filter": {
+            "help": "HPF gain value as specified in PSoC6 TRM, 0 means disable, [0 .. 15]",
+            "value": 0
+        },
+        "debug": {
+            "help": "Enable debug logs. [true/false]",
+            "value": false
+        }
+    }
+}
