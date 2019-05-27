@@ -27,13 +27,11 @@
 typedef enum {
     PDM_STATE_IDLE = 0,
     PDM_STATE_STOPPED,
-    PDM_STATE_STREAMING,
     PDM_STATE_RECEIVING
 } pdm_stream_state_t;
 
 
 #define PDM_AUDIO_EVENT_RX_COMPLETE     (1 << 0)
-#define PDM_AUDIO_EVENT_STREAM_STOPPED  (1 << 4)
 #define PDM_AUDIO_EVENT_OVERRUN         (1 << 8)
 #define PDM_AUDIO_EVENT_DMA_ERROR       (1 << 9)
 
@@ -46,15 +44,12 @@ struct pdm_audio_s {
     PDM_Type                            *base;
     PinName                             pin_data_in;
     PinName                             pin_clk;
-    uint32_t                            actual_speed;
     uint8_t                             dma_unit;
     uint8_t                             dma_channel;
     IRQn_Type                           irqn;
     uint16_t                            events;
+    uint32_t                            handler;
     volatile pdm_stream_state_t         state;
-    volatile uint32_t                   num_scheduled;
-    uint32_t                            current_scheduled;
-    uint32_t                            current_completed;
 #if DEVICE_SLEEP && DEVICE_LPTICKER
     cy_stc_syspm_callback_params_t      pm_callback_params;
     cy_stc_syspm_callback_t             pm_callback_handler;

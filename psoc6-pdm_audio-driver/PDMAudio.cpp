@@ -29,18 +29,13 @@ namespace mbed {
 
 PDMAudio *PDMAudio::_owner = NULL;
 
-SingletonPtr<PlatformMutex> PDMAudio::_mutex;
-
-
 PDMAudio::PDMAudio(PinName data_in, PinName clk) :
     _pdm_dev(),
     _deep_sleep_locked(false),
     _thunk_irq(this)
 {
-    lock();
     pdm_audio_init(&_pdm_dev, data_in, clk);
     _owner = this;
-    unlock();
 }
 
 PDMAudio::~PDMAudio()
@@ -51,39 +46,24 @@ PDMAudio::~PDMAudio()
     }
 }
 
-void PDMAudio::lock()
-{
-    _mutex->lock();
-}
-
-void PDMAudio::unlock()
-{
-    _mutex->unlock();
-}
-
-
 int PDMAudio::read(int32_t *buffer, int length, const event_callback_t &callback, int event)
 {
-    lock();
     _rx_callback = callback;
     _thunk_irq.callback(&PDMAudio::irq_handler_asynch);
     sleep_manager_lock_deep_sleep();
     _deep_sleep_locked++;
     pdm_audio_rx_async(&_pdm_dev, buffer, length, _thunk_irq.entry(), event, DMA_USAGE_ALWAYS);
-    unlock();
     return 0;
 }
 
 
 void PDMAudio::abort_read()
 {
-    lock();
     pdm_audio_abort_asynch(&_pdm_dev);
     while (_deep_sleep_locked) {
         sleep_manager_unlock_deep_sleep();
         _deep_sleep_locked--;
     }
-    unlock();
 }
 
 

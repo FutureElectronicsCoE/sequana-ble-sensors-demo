@@ -105,7 +105,6 @@
 #endif // MBED_CONF_PDM_AUDIO_HIGH_PASS_FILTER
 
 
-#define NUM_PDM_AUDIO_INTERNAL_BUFFERS      2
 #define PDM_AUDIO_IRQ_PRIORITY              2
 
 ////////////////////////////////////
@@ -149,24 +148,8 @@ static const cy_stc_pdm_pcm_config_t default_pdm_pcm_config =
 };
 
 
-typedef enum {
-    BUFFER_FREE = 0,
-    BUFFER_SCHEDULED,
-    BUFFER_ARMED
-} pdm_buffer_state_t;
-
-
-typedef struct {
-    pdm_buffer_state_t  state;
-    int32_t            *buffer;
-    uint32_t            count;
-    uint32_t            handler;
-} pdm_bufctrl_t;
-
-
 typedef struct pdm_audio_s pdm_audio_obj_t;
 #define OBJ_P(in)     (&(in->pdm))
-
 
 
 ////////////////////////////////////
@@ -211,7 +194,7 @@ typedef struct pdm_audio_s pdm_audio_obj_t;
 #define PDM_AUDIO_DMA_INTR_MASK                 CY_DMA_INTR_MASK
 
 
-const cy_stc_dma_descriptor_config_t pdm_dma_descr_config =
+cy_stc_dma_descriptor_config_t pdm_dma_descr_config =
 {
     .retrigger       = CY_DMA_RETRIG_4CYC,
     .interruptType   = CY_DMA_DESCR,
@@ -221,19 +204,19 @@ const cy_stc_dma_descriptor_config_t pdm_dma_descr_config =
     .dataSize        = CY_DMA_WORD,
     .srcTransferSize = CY_DMA_TRANSFER_SIZE_DATA,
     .dstTransferSize = CY_DMA_TRANSFER_SIZE_DATA,
-    .descriptorType  = CY_DMA_1D_TRANSFER,
+    .descriptorType  = CY_DMA_2D_TRANSFER,
     .srcAddress      = NULL,
     .dstAddress      = NULL,
-    .srcXincrement   = 1,
-    .dstXincrement   = 0,
-    .xCount          = 1,
-    .srcYincrement   = 1,
-    .dstYincrement   = 0,
+    .srcXincrement   = 0,
+    .dstXincrement   = 1,
+    .xCount          = 16,
+    .srcYincrement   = 0,
+    .dstYincrement   = 16,
     .yCount          = 1,
     .nextDescriptor  = NULL
 };
 
-cy_stc_dma_descriptor_t dma_descriptors[NUM_PDM_AUDIO_INTERNAL_BUFFERS] =
+cy_stc_dma_descriptor_t dma_descriptors[1] =
 {
     {
         .ctl = 0,
@@ -249,7 +232,6 @@ cy_stc_dma_descriptor_t dma_descriptors[NUM_PDM_AUDIO_INTERNAL_BUFFERS] =
 static void pdm_configure_dma(pdm_audio_obj_t *obj)
 {
     cy_stc_dma_channel_config_t channel_config;
-    int i;
 
 	/* Perform Trigger Mux configuration */
 	Cy_TrigMux_Connect(TRIG13_IN_AUDIOSS_TR_PDM_RX_REQ,
@@ -261,9 +243,7 @@ static void pdm_configure_dma(pdm_audio_obj_t *obj)
                        CY_TR_MUX_TR_INV_DISABLE,
                        TRIGGER_TYPE_LEVEL);
 
-    for (i = 0; i < NUM_PDM_AUDIO_INTERNAL_BUFFERS; ++i) {
-        Cy_DMA_Descriptor_Init(&dma_descriptors[i], &pdm_dma_descr_config);
-    }
+    Cy_DMA_Descriptor_Init(&dma_descriptors[0], &pdm_dma_descr_config);
 
     channel_config.descriptor  = &dma_descriptors[0];
     channel_config.preemptable = false;
@@ -272,10 +252,10 @@ static void pdm_configure_dma(pdm_audio_obj_t *obj)
     channel_config.bufferable  = false;
 
     Cy_DMA_Channel_Init(PDM_AUDIO_DMA_HW, PDM_AUDIO_DMA_CHANNEL, &channel_config);
+    Cy_DMA_Channel_SetInterruptMask(PDM_AUDIO_DMA_HW, PDM_AUDIO_DMA_CHANNEL, CY_DMA_INTR_MASK);
 
     Cy_DMA_Enable(PDM_AUDIO_DMA_HW);
 }
-
 
 static void pdm_trigger_dma(cy_stc_dma_descriptor_t *descriptor, void *ptr, uint32_t count)
 {
@@ -286,9 +266,21 @@ static void pdm_trigger_dma(cy_stc_dma_descriptor_t *descriptor, void *ptr, uint
         }
     }
 
-    Cy_DMA_Descriptor_SetSrcAddress(descriptor, (const void *)ptr);
-    Cy_DMA_Descriptor_SetDstAddress(descriptor, (const void *)&(PDM0->RX_FIFO_RD));
-    Cy_DMA_Descriptor_SetXloopDataCount(descriptor, count);
+    if (count <= 256) {
+        Cy_DMA_Descriptor_SetXloopDataCount(descriptor, count);
+        Cy_DMA_Descriptor_SetYloopDataCount(descriptor, 1);
+    } else if (count < 4096) {
+        // Have to use dual-loop, must be divisible by 16
+        if (count & 0xf) {
+            error("pdm_audio_api: transfer size not multiple of 16!");
+        }
+        Cy_DMA_Descriptor_SetXloopDataCount(descriptor, 16);
+        Cy_DMA_Descriptor_SetYloopDataCount(descriptor, count / 16);
+    } else {
+        error("pdm_audio_api: transfer size too big!");
+    }
+    Cy_DMA_Descriptor_SetSrcAddress(descriptor, (const void *)&(PDM0->RX_FIFO_RD));
+    Cy_DMA_Descriptor_SetDstAddress(descriptor, (const void *)ptr);
     Cy_DMA_Channel_SetDescriptor(PDM_AUDIO_DMA_HW, PDM_AUDIO_DMA_CHANNEL, descriptor);
     Cy_DMA_Channel_Enable(PDM_AUDIO_DMA_HW, PDM_AUDIO_DMA_CHANNEL);
 }
@@ -334,9 +326,6 @@ static bool find_divider_settings(uint32_t value, cy_stc_pdm_pcm_config_t *p_con
 
 pdm_audio_t     *pdm_audio_object = NULL;
 
-static pdm_bufctrl_t   buffer_control[NUM_PDM_AUDIO_INTERNAL_BUFFERS];
-
-void pdm_audio_interrupt_handler(void);
 
 
 static IRQn_Type pdm_irq_allocate_channel(pdm_audio_obj_t *obj)
@@ -363,26 +352,20 @@ static int pdm_setup_irq_handler(pdm_audio_obj_t *obj, uint32_t handler)
     return 0;
 }
 
-static void pdm_init_buffers(void)
+static void pdm_init_buffers(pdm_audio_t *obj)
 {
-    uint32_t i;
-
-    for (i = 0; i < NUM_PDM_AUDIO_INTERNAL_BUFFERS; ++i)
-    {
-        buffer_control[i].state = BUFFER_FREE;
-        buffer_control[i].count = 0;
-        buffer_control[i].buffer = NULL;
-        buffer_control[i].handler = 0;
-    }
+    obj->rx_buff.length = 0;
+    obj->rx_buff.buffer = NULL;
+    obj->rx_buff.pos = 0;
+    obj->rx_buff.width = sizeof(int32_t);
+    obj->pdm.handler = 0;
 }
 
-static void pdm_reset_state(pdm_audio_obj_t *obj)
+static void pdm_reset_state(pdm_audio_t *obj_in)
 {
-    pdm_init_buffers();
+    pdm_audio_obj_t *obj = OBJ_P(obj_in);
+    pdm_init_buffers(obj_in);
     obj->state = PDM_STATE_IDLE;
-    obj->current_scheduled = 0;
-    obj->current_completed = 0;
-    obj->num_scheduled = 0;
     obj->events = 0;
 }
 
@@ -442,8 +425,9 @@ void pdm_audio_init(pdm_audio_t *obj_in, PinName data_in, PinName clk)
         obj->base = (PDM_Type*)pdm;
         obj->pin_data_in = data_in;
         obj->pin_clk = clk;
-        obj->state = PDM_STATE_IDLE;
-        pdm_reset_state(obj);
+        obj->dma_unit = PDM_AUDIO_DMA_UNIT;
+        obj->dma_channel = PDM_AUDIO_DMA_CHANNEL;
+        pdm_reset_state(obj_in);
         pdm_init_pins(obj);
         pdm_init_peripheral(obj);
         pdm_configure_dma(obj);
@@ -471,22 +455,14 @@ void pdm_audio_free(pdm_audio_t *obj_in)
 }
 
 
-static void pdm_trigger_buffer(pdm_audio_obj_t *obj)
+static void pdm_trigger_buffer(pdm_audio_t *obj)
 {
-    MBED_ASSERT(obj->current_completed < NUM_PDM_AUDIO_INTERNAL_BUFFERS);
-    MBED_ASSERT(obj->num_scheduled > 0);
-
-    pdm_bufctrl_t *buffer = &buffer_control[obj->current_completed];
-    obj->num_scheduled--;
-    MBED_ASSERT(buffer->state == BUFFER_SCHEDULED);
-    buffer->state = BUFFER_ARMED;
-    MBED_ASSERT(buffer->buffer);
-    obj->state = PDM_STATE_STREAMING;
-    pdm_setup_irq_handler(obj, buffer->handler);
-    pdm_trigger_dma(&dma_descriptors[obj->current_completed], buffer->buffer, buffer->count);
+    obj->pdm.state = PDM_STATE_RECEIVING;
+    pdm_setup_irq_handler(&obj->pdm, obj->pdm.handler);
+    pdm_trigger_dma(&dma_descriptors[0], obj->rx_buff.buffer, obj->rx_buff.length);
 
     // Enable interrupts;
-    NVIC_EnableIRQ(obj->irqn);
+    NVIC_EnableIRQ(obj->pdm.irqn);
 }
 
 
@@ -494,71 +470,51 @@ static void pdm_trigger_buffer(pdm_audio_obj_t *obj)
 void pdm_audio_rx_async(pdm_audio_t *obj_in, int32_t *rx_buffer, uint32_t count, uint32_t handler, uint32_t event, DMAUsage hint)
 {
     pdm_audio_obj_t *obj = OBJ_P(obj_in);
+    buffer_t *buffer = &obj_in->rx_buff;
 
-    if (obj->num_scheduled < NUM_PDM_AUDIO_INTERNAL_BUFFERS) {
-        uint32_t current = obj->current_scheduled;
-        pdm_bufctrl_t *buffer = &buffer_control[current];
-
-        obj->current_scheduled = (obj->current_scheduled + 1) % NUM_PDM_AUDIO_INTERNAL_BUFFERS;
+    if (obj->state == PDM_STATE_IDLE || obj->state == PDM_STATE_STOPPED) {
         buffer->buffer = rx_buffer;
-        buffer->count = count;
-        buffer->handler = handler;
-        obj->num_scheduled++;
+        buffer->length = count;
+        obj->handler = handler;
         if (obj->state == PDM_STATE_IDLE) {
             // Clear PDM-PCM fifo and status bits.
+            Cy_PDM_PCM_Disable(obj->base);
             Cy_PDM_PCM_ClearFifo(obj->base);
-            (void)Cy_PDM_PCM_GetInterruptStatus(obj->base);
+            Cy_DMA_Channel_ClearInterrupt(PDM_AUDIO_DMA_HW, PDM_AUDIO_DMA_CHANNEL);
+            (void)Cy_PDM_PCM_ClearInterrupt(obj->base, CY_PDM_PCM_INTR_MASK);
+            Cy_PDM_PCM_Enable(obj->base);
         }
-        if (obj->state == PDM_STATE_IDLE || obj->state == PDM_STATE_STOPPED) {
-            pdm_trigger_buffer(obj);
-        }
+        pdm_trigger_buffer(obj_in);
+    } else {
+        MBED_ASSERT("pdm_audio_api: invlalid state on rx call");
     }
 }
 
 
 uint32_t pdm_audio_irq_handler_asynch(pdm_audio_t *obj_in)
 {
-    MBED_ASSERT(obj_in == pdm_audio_object);
     pdm_audio_obj_t *obj = OBJ_P(obj_in);
     uint32_t event = 0;
 
+    MBED_ASSERT(obj_in == pdm_audio_object);
+    MBED_ASSERT(obj->state == PDM_STATE_RECEIVING);
+
     cy_en_dma_intr_cause_t status = Cy_DMA_Channel_GetStatus(PDM_AUDIO_DMA_HW, PDM_AUDIO_DMA_CHANNEL);
-
+    Cy_DMA_Channel_ClearInterrupt(PDM_AUDIO_DMA_HW, PDM_AUDIO_DMA_CHANNEL);
     if (status == CY_DMA_INTR_CAUSE_COMPLETION) {
-        MBED_ASSERT(obj->current_completed < NUM_PDM_AUDIO_INTERNAL_BUFFERS);
-        buffer_t *ubuffer = &obj_in->rx_buff;
-        pdm_bufctrl_t *buffer = &buffer_control[obj->current_completed];
-        MBED_ASSERT(buffer->state == BUFFER_ARMED);
-        ubuffer->pos = obj->current_completed;
-        ubuffer->buffer = buffer->buffer;
-        ubuffer->length = buffer->count;
-        ubuffer->width = sizeof(uint32_t);
-        buffer->state = BUFFER_FREE;
-        buffer->buffer = NULL;
-        buffer->count = 0;
-        // Switch to next buffer and trigger DMA.
-        obj->current_completed = (obj->current_completed + 1) % NUM_PDM_AUDIO_INTERNAL_BUFFERS;
-
-        if (obj->num_scheduled > 0) {
-            pdm_trigger_buffer(obj);
-        } else {
-            // No more scheduled buffers;
-            obj->state = PDM_STATE_STOPPED;
-            event |= PDM_AUDIO_EVENT_STREAM_STOPPED;
-        }
-        // Notify user.
         event |= PDM_AUDIO_EVENT_RX_COMPLETE;
     } else {
         // error handling
         NVIC_DisableIRQ(obj->irqn);
         pdm_abort_dma();
-        obj->state = PDM_STATE_STOPPED;
         event |= PDM_AUDIO_EVENT_DMA_ERROR;
     }
 
     if (Cy_PDM_PCM_GetInterruptStatus(obj->base) & CY_PDM_PCM_INTR_RX_OVERFLOW) {
         event |= PDM_AUDIO_EVENT_OVERRUN;
     }
+
+    obj->state = PDM_STATE_STOPPED;
 
     return event;
 }
@@ -567,7 +523,7 @@ uint32_t pdm_audio_irq_handler_asynch(pdm_audio_t *obj_in)
 uint8_t pdm_audio_active(pdm_audio_t *obj_in)
 {
     pdm_audio_obj_t *obj = OBJ_P(obj_in);
-    return (obj->state != PDM_STATE_IDLE);
+    return (obj->state == PDM_STATE_RECEIVING);
 }
 
 
@@ -577,7 +533,7 @@ void pdm_audio_abort_asynch(pdm_audio_t *obj_in)
     if (obj->state != PDM_STATE_IDLE) {
         NVIC_DisableIRQ(obj->irqn);
         pdm_abort_dma();
-        pdm_reset_state(obj);
+        pdm_reset_state(obj_in);
     }
 }
 

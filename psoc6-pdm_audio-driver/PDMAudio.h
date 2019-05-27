@@ -75,14 +75,6 @@ public:
      */
     void abort_read();
 
-    /** Acquire exclusive access to this device
-     */
-    virtual void lock(void);
-
-    /** Release exclusive access to this device
-     */
-    virtual void unlock(void);
-
 #if !defined(DOXYGEN_ONLY)
 
 protected:
