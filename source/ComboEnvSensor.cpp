@@ -29,9 +29,13 @@ void ComboEnvSensor::updater()
     bool update = false;
     uint32_t temp;
 
-    if (_as_driver.read(_value.ambient_light, temp) == As7261Driver::STATUS_OK) {
-        update = true;
+    if (_as_driver.read(_value.ambient_light,
+                        temp,
+                        _value.color_red,
+                        _value.color_green,
+                        _value.color_blue) == As7261Driver::STATUS_OK) {
         _value.color_temp = temp;
+        update = true;
     };
 
     if (_hs_driver.read(_value.humidity, _value.temperature) != Hs3001Driver::STATUS_OK) {
@@ -45,6 +49,7 @@ void ComboEnvSensor::updater()
     if (update) {
         update_notify();
     }
+    _as_driver.start_measurement();
     _hs_driver.start_conversion();
 }
 

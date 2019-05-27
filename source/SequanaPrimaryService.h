@@ -54,7 +54,7 @@ public:
 
 /** Converter to create BLE characteristic data from sensor data.
  */
-class ComboEnvCharBuffer : public CharBuffer<ComboEnvValue, 11> {
+class ComboEnvCharBuffer : public CharBuffer<ComboEnvValue, 14> {
 public:
     ComboEnvCharBuffer& operator= (const ComboEnvValue &val)
     {
@@ -63,6 +63,9 @@ public:
         memcpy(_bytes+4, &val.ambient_light, 3);
         memcpy(_bytes+7, &val.humidity, 2);
         memcpy(_bytes+9, &val.color_temp, 2);
+        _bytes[11] = val.color_red;
+        _bytes[12] = val.color_green;
+        _bytes[13] = val.color_blue;
         return *this;
     }
 };

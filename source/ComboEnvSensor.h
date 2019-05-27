@@ -36,6 +36,9 @@ struct ComboEnvValue {
     uint32_t    ambient_light;  //<! ambient light level
     uint16_t    color_temp;     //<! light temperature
     uint16_t    noise;          //<! noise level
+    uint8_t     color_red;      //<! light red component
+    uint8_t     color_green;    //<! light green component
+    uint8_t     color_blue;     //<! light blue component
 };
 
 

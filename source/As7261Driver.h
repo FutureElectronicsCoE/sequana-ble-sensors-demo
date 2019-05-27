@@ -39,13 +39,18 @@ public:
 
     enum VirtualReg {
         SETUP_CONTROL   = 0x04,
+        INT_TIME        = 0x05,
         LED_CONTROL     = 0x07,
+        COLOR_X         = 0x14,
+        COLOR_Y         = 0x18,
+        COLOR_Z         = 0x1C,
         CAL_LUX         = 0x3C,
         CAL_CCT         = 0x3E,
         WRITE_OP        = 0x80
     };
 
     static const uint32_t   LUXCCT_REG_SIZE = 2;
+    static const uint32_t   COLOR_REG_SIZE = 4;
 
     struct StatusReg {
         static const uint8_t RX_PENDING = 0x01;
@@ -88,7 +93,7 @@ public:
 
     /** Read measured values from sensor.
      */
-    Status read(uint32_t& lux, uint32_t& cct);
+    Status read(uint32_t &lux, uint32_t &cct, uint8_t &red, uint8_t &green, uint8_t &blue );
 
     /** Set lighting led status.
      */
@@ -98,12 +103,17 @@ public:
      */
     void init_chip();
 
+    /** Start measurement cycle.
+     */
+    void start_measurement();
+
 protected:
     int read_phy_reg(PhyReg reg, uint8_t &value);
     int write_phy_reg(PhyReg reg, uint8_t value);
     int check_buffer_status(uint8_t mask, uint8_t required);
     Status read_register(VirtualReg reg, uint8_t &value);
     Status write_register(VirtualReg reg, uint8_t value);
+    Status read_value(VirtualReg reg, uint32_t len, uint32_t &value);
 
 protected:
     I2C&        _i2c;

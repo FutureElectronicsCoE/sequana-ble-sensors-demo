@@ -44,7 +44,7 @@ SingleCharParams accMagSensorCharacteristics[2] = {
 
 SingleCharParams comboEnvSensorCharacteristics[2] = {
     { &UUID_TEMPERATURE_CHAR, 0, 2 },
-    { &UUID_OTHER_ENV_CHAR, 2, 9 }
+    { &UUID_OTHER_ENV_CHAR, 2, 12 }
 };
 
 static const char version_info[] =
