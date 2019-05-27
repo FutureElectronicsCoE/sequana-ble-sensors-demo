@@ -27,8 +27,9 @@
 // Number of audio samples in a single audio buffer.
 // This determines how often data thread will be waked up, given constant
 // data rate of 32000 sps, e.g. 512 -> every 16ms
-#define AUDIO_BUFFER_SIZE   512
-#define NUM_AUDIO_BUFFERS   4
+#define AUDIO_BUFFER_SIZE       512
+#define NUM_AUDIO_BUFFERS       8
+#define AVERAGE_OVER_BUFFERS    60
 
 
 class NoiseLevelDriver {
@@ -55,7 +56,9 @@ public:
     void start_measurement(void);
 
 protected:
-    typedef int32_t audio_buffer_t[AUDIO_BUFFER_SIZE];
+    typedef struct {
+        int32_t buff[AUDIO_BUFFER_SIZE];
+    } audio_buffer_t;
 
 protected:
     void        _start_reading();
@@ -71,6 +74,9 @@ protected:
     MemoryPool<audio_buffer_t, NUM_AUDIO_BUFFERS>   _buffer_pool;
     Queue<audio_buffer_t, NUM_AUDIO_BUFFERS>        _buffer_queue;
     audio_buffer_t                                  *_current_buffer;
+    uint32_t                                        _avg_level;
+    uint32_t                                        _avg_index;
+    uint32_t                                        _avg_table[AVERAGE_OVER_BUFFERS];
 };
 
 
