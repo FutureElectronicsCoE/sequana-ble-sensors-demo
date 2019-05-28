@@ -35,6 +35,8 @@ typedef CharBuffer<Kx64Value, 12>   Kx64CharBuffer;
 
 typedef CharBuffer<Sps30Value, 12>  Sps30CharBuffer;
 
+#define SEQUANA_INFO_MAX_LEN        250
+
 
 /** Converter to create BLE characteristic data from sensor data.
  */
@@ -65,6 +67,7 @@ public:
     }
 };
 
+#ifdef TARGET_FUTURE_SEQUANA
 /** Converter to create BLE characteristic data from RGB Led data.
  */
 class RGBLedCharBuffer : public CharBuffer<RGBLedValue, 6> {
@@ -80,6 +83,7 @@ public:
         return *this;
     }
 };
+#endif //TARGET_FUTURE_SEQUANA
 
 
 
@@ -102,10 +106,17 @@ public:
 #endif //TARGET_FUTURE_SEQUANA
                    Sps30Sensor &partmatter_sensor,
                    ComboEnvSensor &combo_env_sensor,
-                   AirQSensor &airq_sensor,
-                   RGBLedActuator &rgb_led_actuator );
+                   AirQSensor &airq_sensor
+#ifdef TARGET_FUTURE_SEQUANA
+                    ,
+                   RGBLedActuator &rgb_led_actuator
+#endif //TARGET_FUTURE_SEQUANA
+                   );
 
+#ifdef TARGET_FUTURE_SEQUANA
     void on_data_written(const GattWriteCallbackParams *params);
+#endif //TARGET_FUTURE_SEQUANA
+    void set_information(const char* info, size_t length);
 
 protected:
     BLE &_ble;
@@ -115,8 +126,10 @@ protected:
     SensorCharacteristic<Sps30CharBuffer, Sps30Value>               _particulateMatterMeasurement;
     SensorMultiCharacteristic<2, ComboEnvCharBuffer, ComboEnvValue> _comboEnvMeasurement;
     SensorCharacteristic<AirQCharBuffer, AirQValue>                 _airQMeasurement;
+#ifdef TARGET_FUTURE_SEQUANA
     ActuatorCharacteristic<RGBLedCharBuffer, RGBLedValue>           _ledState;
-
+#endif //TARGET_FUTURE_SEQUANA
+    ReadOnlyArrayGattCharacteristic<char, SEQUANA_INFO_MAX_LEN>     _info;
 };
 
 } //namespace

@@ -19,7 +19,8 @@
 #include "UUID.h"
 
 #include "SequanaPrimaryService.h"
-
+#include "app_version.h"
+#include <string.h>
 
 namespace sequana {
 
@@ -32,6 +33,7 @@ UUID UUID_MAGNETOMETER_CHAR("F79B4EB7-1B6E-41F2-8D65-D346B4EF5685");
 UUID UUID_AIR_QUALITY_CHAR("f79B4EBA-1B6E-41F2-8D65-D346B4EF5685");
 UUID UUID_PARTICULATE_MATTER_CHAR("F79B4EBB-1B6B-41F2-8D65-D346B4EF5685");
 UUID UUID_OTHER_ENV_CHAR("F79B4EBC-1B6E-41F2-8D65-D346B4EF5685");
+UUID UUID_SEQUANA_INFO_CHAR("F79B4EB9-1B6E-41F2-8D65-D346B4EF5685");
 
 int16_t tempValue = 0;
 
@@ -45,6 +47,21 @@ SingleCharParams comboEnvSensorCharacteristics[2] = {
     { &UUID_OTHER_ENV_CHAR, 2, 9 }
 };
 
+static const char version_info[] =
+#ifdef TARGET_FUTURE_SEQUANA
+    "Sequana"
+#else
+    "Sequana Environmental Shield"
+#endif // TARGET_FUTURE_SEQUANA
+    " firmware version "
+    APP_VERSION_STR
+#if !(APP_VERSION_MAJOR || APP_VERSION_MINOR)
+    " build at " __DATE__ "" __TIME__
+#endif
+;
+
+static const char initial_info[SEQUANA_INFO_MAX_LEN] = "";
+
 
 PrimaryService::PrimaryService(BLE &ble,
 #ifdef TARGET_FUTURE_SEQUANA
@@ -52,8 +69,12 @@ PrimaryService::PrimaryService(BLE &ble,
 #endif //TARGET_FUTURE_SEQUANA
                                Sps30Sensor &sps30,
                                ComboEnvSensor &combo,
-                               AirQSensor &airq,
-                               RGBLedActuator &rgb_led) :
+                               AirQSensor &airq
+#ifdef TARGET_FUTURE_SEQUANA
+                               ,
+                               RGBLedActuator &rgb_led
+#endif //TARGET_FUTURE_SEQUANA
+                               ) :
         _ble(ble),
 #ifdef TARGET_FUTURE_SEQUANA
         _accMagSensorMeasurement(ble,
@@ -69,9 +90,12 @@ PrimaryService::PrimaryService(BLE &ble,
         _airQMeasurement(ble,
                          UUID_AIR_QUALITY_CHAR,
                          airq),
+#ifdef TARGET_FUTURE_SEQUANA
         _ledState(ble,
                   UUID_RGB_LED_CHAR,
-                  rgb_led)
+                  rgb_led),
+#endif // TARGET_FUTURE_SEQUANA
+        _info(UUID_SEQUANA_INFO_CHAR, (char*)initial_info)
 {
         GattCharacteristic *sequanaChars[] = {
 #ifdef TARGET_FUTURE_SEQUANA
@@ -82,14 +106,20 @@ PrimaryService::PrimaryService(BLE &ble,
              _comboEnvMeasurement.get_characteristic(0),
              _comboEnvMeasurement.get_characteristic(1),
              _airQMeasurement.get_characteristic(),
-             _ledState.get_characteristic()
+#ifdef TARGET_FUTURE_SEQUANA
+             _ledState.get_characteristic(),
+#endif // TARGET_FUTURE_SEQUANA            ,
+             &_info
         };
 
         GattService sequanaService(UUID_SEQUANA_PRIMARY_SERVICE, sequanaChars, sizeof(sequanaChars) / sizeof(GattCharacteristic *));
 
         _ble.gattServer().addService(sequanaService);
+
+        set_information(version_info, strlen(version_info));
 }
 
+#ifdef TARGET_FUTURE_SEQUANA
 void PrimaryService::on_data_written(const GattWriteCallbackParams *params)
 {
     if ((params->handle == _ledState.get_characteristic()->getValueHandle()) && (params->len == 6)) {
@@ -97,7 +127,14 @@ void PrimaryService::on_data_written(const GattWriteCallbackParams *params)
         _ledState.set_actuator(value);
     }
 }
+#endif // TARGET_FUTURE_SEQUANA
 
+void PrimaryService::set_information(const char* info, size_t length)
+{
+    if (length <= SEQUANA_INFO_MAX_LEN) {
+        _ble.gattServer().write(_info.getValueHandle(), (const uint8_t*)info, length);
+    }
+}
 
 } //namespace
 
