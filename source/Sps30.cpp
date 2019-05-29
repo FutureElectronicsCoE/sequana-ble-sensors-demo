@@ -323,11 +323,9 @@ Sps30Driver::Sps30Driver(RawSerial &serial) :
  */
 void Sps30Sensor::updater()
 {
-    Sps30Value val;
-
     if (_started) {
-        if (_driver.read(val) == Sps30Driver::STATUS_OK) {
-            update_value(val);
+        if (_driver.read(_value) == Sps30Driver::STATUS_OK) {
+            update_notify();
         }
         _driver.request_new_frame();
     } else {

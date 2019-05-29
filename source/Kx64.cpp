@@ -116,9 +116,8 @@ void Kx64Driver::init_chip()
  */
 void Kx64Sensor::updater()
 {
-    Kx64Value val;
-    if (_driver.read(val) == Kx64Driver::STATUS_OK) {
-        update_value(val);
+    if (_driver.read(_value) == Kx64Driver::STATUS_OK) {
+        update_notify();
     };
     _driver.clear_buffer();
 }

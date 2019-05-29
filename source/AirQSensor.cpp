@@ -23,20 +23,19 @@ using namespace sequana;
  */
 void AirQSensor::updater()
 {
-    AirQValue val = get_value();
     bool update = false;
     uint8_t iaq;
 
-    if (_zmod_driver.read(val.tvoc, val.eco2, iaq) == Zmod44xxDriver::STATUS_OK) {
+    if (_zmod_driver.read(_value.tvoc, _value.eco2, iaq) == Zmod44xxDriver::STATUS_OK) {
         update = true;
     };
 
-    if (_scd_driver.read(val.co2) == Scd30Driver::STATUS_OK) {
+    if (_scd_driver.read(_value.co2) == Scd30Driver::STATUS_OK) {
         update = true;
     };
 
     if (update) {
-        update_value(val);
+        update_notify();
     }
 }
 

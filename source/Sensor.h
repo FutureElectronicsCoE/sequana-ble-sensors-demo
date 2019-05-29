@@ -68,9 +68,8 @@ public:
     virtual void start(EventQueue& ev_queue) = 0;
 
 protected:
-    void update_value(ValueT& value)
+    void update_notify()
     {
-        _value = value;
         if (_on_update) {
             _on_update();
         }

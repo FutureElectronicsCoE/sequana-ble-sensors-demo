@@ -26,25 +26,24 @@ using namespace sequana;
  */
 void ComboEnvSensor::updater()
 {
-    ComboEnvValue val;
     bool update = false;
     uint32_t temp;
 
-    if (_as_driver.read(val.ambient_light, temp) == As7261Driver::STATUS_OK) {
+    if (_as_driver.read(_value.ambient_light, temp) == As7261Driver::STATUS_OK) {
         update = true;
-    };
-    val.color_temp = temp;
-
-    if (_hs_driver.read(val.humidity, val.temperature) != Hs3001Driver::STATUS_OK) {
-        update = true;
+        _value.color_temp = temp;
     };
 
-    if (_pdm_driver.read(val.noise) == NoiseLevelDriver::STATUS_OK) {
+    if (_hs_driver.read(_value.humidity, _value.temperature) != Hs3001Driver::STATUS_OK) {
+        update = true;
+    };
+
+    if (_pdm_driver.read(_value.noise) == NoiseLevelDriver::STATUS_OK) {
         update = true;
     }
 
     if (update) {
-        update_value(val);
+        update_notify();
     }
     _hs_driver.start_conversion();
 }
