@@ -141,6 +141,14 @@ Options:
         print(usage)
         sys.exit(2)
 
+    # check for version tag to not exist within git tree
+    if not debug:
+        dev_null = open(os.devnull, "w")
+        res = subprocess.call(["git", "rev-parse", 'v'+ver], stdout=dev_null, stderr=subprocess.STDOUT)
+        if res == 0:
+            print('ERROR: Specified version already present in git.')
+            sys.exit(3)
+
     # generate version information
     gen_version_info(ver, version_file)
     compile_cmd = ["mbed", "compile", "-m", target, "-t", toolchain]
@@ -152,7 +160,7 @@ Options:
     res = subprocess.call(compile_cmd)
     if res != 0:
         print "Build has failed!"
-        sys.exit(1)
+        sys.exit(4)
 
     if not debug:
         release_filename = "releases/" + name + '-' + ver + ".hex"
@@ -164,17 +172,17 @@ Options:
         res += subprocess.call(["git", "add", version_file ])
         if res != 0:
             print ("git error!")
-            sys.exit(2)
+            sys.exit(5)
 
         res = subprocess.call(["git", "commit", "-m" , '"Release version ' + ver + '"'])
         if res != 0:
             print ("git error")
-            sys.exit(4)
+            sys.exit(6)
 
         res = subprocess.call(["git", "tag", 'v'+ver ])
         if res != 0:
             print ("git error")
-            sys.exit(5)
+            sys.exit(7)
 
         print("\nRelease generated, commited and tagged. Please push it to remote repository.\n")
     else:
