@@ -3,11 +3,12 @@
         "FUTURE_SEQUANA": {
             "target.features_add": ["BLE"],
             "target.device_name": "CY8C6347BZI-BLD53M4",
-			"target.hex_filename": "psoc63_m0_ble_controller_1.05.hex"
+			"target.hex_filename": "psoc63_m0_ble_controller_1.06.hex"
 		},
 		"*": {
 				"platform.stdio-baud-rate": 115200,
-                "platform.default-serial-baud-rate": 115200
+                "platform.default-serial-baud-rate": 115200,
+				"pdm-audio.high-pass-filter": 7
 		}
     }
 }

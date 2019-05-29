@@ -62,7 +62,7 @@ Kx64Sensor      kx64(spi1, P9_5);
 #endif //TARGET_FUTURE_SEQUANA
 
 Sps30Sensor     sps30(uart1);
-ComboEnvSensor  combo(i2c1, AS7261_ADDR, HS3001_ADDR);
+ComboEnvSensor  combo(i2c1, AS7261_ADDR, HS3001_ADDR, P10_5, P10_4);
 AirQSensor      airq(i2c1, ZMOD44XX_ADDR, zmod1_reset, SCD30_ADDR);
 RGBLedActuator  led_rgb;
 

@@ -20,6 +20,7 @@
 #include "Sensor.h"
 #include "As7261Driver.h"
 #include "Hs3001Driver.h"
+#include "NoiseLevelDriver.h"
 
 namespace sequana {
 
@@ -42,9 +43,10 @@ struct ComboEnvValue {
 */
 class ComboEnvSensor : public Sensor<ComboEnvValue> {
 public:
-    ComboEnvSensor(I2C &i2c, uint32_t as_addr, uint32_t hs_addr) :
+    ComboEnvSensor(I2C &i2c, uint32_t as_addr, uint32_t hs_addr, PinName pdm_data, PinName pdm_clk) :
         _as_driver(i2c, as_addr),
-        _hs_driver(i2c, hs_addr)
+        _hs_driver(i2c, hs_addr),
+        _pdm_driver(pdm_data, pdm_clk)
     {}
 
     virtual void start(EventQueue& ev_queue);
@@ -53,6 +55,7 @@ protected:
     void updater();
     As7261Driver _as_driver;
     Hs3001Driver _hs_driver;
+    NoiseLevelDriver _pdm_driver;
 };
 
 
