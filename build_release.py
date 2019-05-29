@@ -174,7 +174,7 @@ Options:
             print ("git error!")
             sys.exit(5)
 
-        res = subprocess.call(["git", "commit", "-m" , '"Release version ' + ver + '"'])
+        res = subprocess.call(["git", "commit", "-m" , "Release version " + ver])
         if res != 0:
             print ("git error")
             sys.exit(6)
