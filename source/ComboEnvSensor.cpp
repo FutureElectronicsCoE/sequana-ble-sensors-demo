@@ -38,7 +38,7 @@ void ComboEnvSensor::updater()
         update = true;
     };
 
-    if (_hs_driver.read(_value.humidity, _value.temperature) != Hs3001Driver::STATUS_OK) {
+    if (_hs_driver.read(_value.humidity, _value.temperature) == Hs3001Driver::STATUS_OK) {
         update = true;
     };
 
