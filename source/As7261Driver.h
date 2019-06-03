@@ -18,6 +18,7 @@
 #define AS7261_DRIVER_H_
 
 #include <stdint.h>
+#include "TypedEnum.h"
 #include <Sensor.h>
 
 
@@ -29,58 +30,6 @@ public:
         STATUS_OK = 0,
         STATUS_STALLED,
         STATUS_NOT_READY
-    };
-
-    enum PhyReg {
-        STATUS_REG  = 0x00,
-        WRITE_REG,
-        READ_REG
-    };
-
-    enum VirtualReg {
-        SETUP_CONTROL   = 0x04,
-        INT_TIME        = 0x05,
-        LED_CONTROL     = 0x07,
-        COLOR_X         = 0x14,
-        COLOR_Y         = 0x18,
-        COLOR_Z         = 0x1C,
-        CAL_LUX         = 0x3C,
-        CAL_CCT         = 0x3E,
-        WRITE_OP        = 0x80
-    };
-
-    static const uint32_t   LUXCCT_REG_SIZE = 2;
-    static const uint32_t   COLOR_REG_SIZE = 4;
-
-    struct StatusReg {
-        static const uint8_t RX_PENDING = 0x01;
-        static const uint8_t TX_PENDING = 0x02;
-    };
-
-    struct ControlReg {
-        static const uint8_t RESET      = 0x80;
-        static const uint8_t INT_EN     = 0x40;
-        static const uint8_t GAINx1     = 0x00;
-        static const uint8_t GAINx4     = 0x10;
-        static const uint8_t GAINx16    = 0x20;
-        static const uint8_t GAINx64    = 0x30;
-        static const uint8_t MODE_0     = 0x00;
-        static const uint8_t MODE_1     = 0x04;
-        static const uint8_t MODE_2     = 0x08;
-        static const uint8_t MODE_3     = 0x0C;
-        static const uint8_t DATA_RDY   = 0x02;
-    };
-
-    struct LedControlReg {
-        static const uint8_t LED_DRV_12mA   = 0x08;
-        static const uint8_t LED_DRV_25mA   = 0x18;
-        static const uint8_t LED_DRV_50mA   = 0x28;
-        static const uint8_t LED_DRV_100mA  = 0x38;
-        static const uint8_t LED_INT_1mA    = 0x01;
-        static const uint8_t LED_INT_2mA    = 0x03;
-        static const uint8_t LED_INT_4mA    = 0x05;
-        static const uint8_t LED_INT_8mA    = 0x07;
-        static const uint8_t LED_OFF        = 0x00;
     };
 
 public:
@@ -106,6 +55,74 @@ public:
     /** Start measurement cycle.
      */
     void start_measurement();
+
+protected:
+    enum PhyReg {
+        STATUS_REG  = 0x00,
+        WRITE_REG,
+        READ_REG
+    };
+
+    enum VirtualReg {
+        SETUP_CONTROL   = 0x04,
+        INT_TIME        = 0x05,
+        LED_CONTROL     = 0x07,
+        COLOR_X         = 0x14,
+        COLOR_Y         = 0x18,
+        COLOR_Z         = 0x1C,
+        CAL_LUX         = 0x3C,
+        CAL_CCT         = 0x3E,
+        WRITE_OP        = 0x80
+    };
+
+    static const uint32_t   LUXCCT_REG_SIZE = 2;
+    static const uint32_t   COLOR_REG_SIZE = 4;
+
+    class StatusReg : public TypedEnum<uint8_t> {
+    public:
+        enum enum_t {
+            RX_PENDING = 0x01,
+            TX_PENDING = 0x02
+        };
+
+        StatusReg(enum_t init_val) : TypedEnum<uint8_t>(init_val) {}
+    };
+
+    class ControlReg : public TypedEnum<uint8_t> {
+    public:
+        enum enum_t {
+            RESET      = 0x80,
+            INT_EN     = 0x40,
+            GAINx1     = 0x00,
+            GAINx4     = 0x10,
+            GAINx16    = 0x20,
+            GAINx64    = 0x30,
+            MODE_0     = 0x00,
+            MODE_1     = 0x04,
+            MODE_2     = 0x08,
+            MODE_3     = 0x0C,
+            DATA_RDY   = 0x02
+        };
+
+        ControlReg(enum_t init_val) : TypedEnum<uint8_t>(init_val) {}
+    };
+
+    class LedControlReg : public TypedEnum<uint8_t> {
+    public:
+        enum enum_t {
+            LED_DRV_12mA   = 0x08,
+            LED_DRV_25mA   = 0x18,
+            LED_DRV_50mA   = 0x28,
+            LED_DRV_100mA  = 0x38,
+            LED_INT_1mA    = 0x01,
+            LED_INT_2mA    = 0x03,
+            LED_INT_4mA    = 0x05,
+            LED_INT_8mA    = 0x07,
+            LED_OFF        = 0x00
+        };
+
+        LedControlReg(enum_t init_val) : TypedEnum<uint8_t>(init_val) {}
+    };
 
 protected:
     int read_phy_reg(PhyReg reg, uint8_t &value);
