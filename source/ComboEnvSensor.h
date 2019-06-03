@@ -21,6 +21,7 @@
 #include "As7261Driver.h"
 #include "Hs3001Driver.h"
 #include "NoiseLevelDriver.h"
+#include "LightSensor.h"
 
 namespace sequana {
 
@@ -28,7 +29,7 @@ namespace sequana {
  * and presented using a single Sequana characteristic.
  *
  * This definition does not match characteristic binary data definition
- * and needs converter to be implemented.
+ * and requires converter implementation.
  */
 struct ComboEnvValue {
     int16_t     temperature;    //<! temperature
@@ -46,19 +47,19 @@ struct ComboEnvValue {
 */
 class ComboEnvSensor : public Sensor<ComboEnvValue> {
 public:
-    ComboEnvSensor(I2C &i2c, uint32_t as_addr, uint32_t hs_addr, PinName pdm_data, PinName pdm_clk) :
-        _as_driver(i2c, as_addr),
+    ComboEnvSensor(I2C &i2c, uint32_t hs_addr, PinName pdm_data, PinName pdm_clk, LightSensor &ls) :
         _hs_driver(i2c, hs_addr),
-        _pdm_driver(pdm_data, pdm_clk)
+        _pdm_driver(pdm_data, pdm_clk),
+        _light_sensor(ls)
     {}
 
     virtual void start(EventQueue& ev_queue);
 
 protected:
     void updater();
-    As7261Driver _as_driver;
     Hs3001Driver _hs_driver;
     NoiseLevelDriver _pdm_driver;
+    LightSensor &_light_sensor;
 };
 
 

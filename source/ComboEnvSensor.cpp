@@ -16,9 +16,6 @@
 
 #include <mbed.h>
 #include "ComboEnvSensor.h"
-#include "As7261Driver.h"
-#include "Hs3001Driver.h"
-
 
 using namespace sequana;
 
@@ -29,11 +26,11 @@ void ComboEnvSensor::updater()
     bool update = false;
     uint32_t temp;
 
-    if (_as_driver.read(_value.ambient_light,
-                        temp,
-                        _value.color_red,
-                        _value.color_green,
-                        _value.color_blue) == As7261Driver::STATUS_OK) {
+    if (_light_sensor.read_light(_value.ambient_light,
+                                 temp,
+                                 _value.color_red,
+                                 _value.color_green,
+                                 _value.color_blue) == 0) {
         _value.color_temp = temp;
         update = true;
     };
@@ -49,7 +46,6 @@ void ComboEnvSensor::updater()
     if (update) {
         update_notify();
     }
-    _as_driver.start_measurement();
     _hs_driver.start_conversion();
 }
 
@@ -58,7 +54,6 @@ void ComboEnvSensor::updater()
  */
 void ComboEnvSensor::start(EventQueue& ev_queue)
 {
-    _as_driver.init_chip();
     _hs_driver.start_conversion();
     _pdm_driver.start_measurement();
     ev_queue.call_every(1000, callback(this, &ComboEnvSensor::updater));

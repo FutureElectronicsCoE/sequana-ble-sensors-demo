@@ -34,6 +34,7 @@ UUID UUID_AIR_QUALITY_CHAR("f79B4EBA-1B6E-41F2-8D65-D346B4EF5685");
 UUID UUID_PARTICULATE_MATTER_CHAR("F79B4EBB-1B6B-41F2-8D65-D346B4EF5685");
 UUID UUID_OTHER_ENV_CHAR("F79B4EBC-1B6E-41F2-8D65-D346B4EF5685");
 UUID UUID_SEQUANA_INFO_CHAR("F79B4EB9-1B6E-41F2-8D65-D346B4EF5685");
+UUID UUID_SEQUANA_LIGHT_SENSOR_CONTROL_CHAR("F79B4EBD-1B6E-41F2-8D65-D346B4EF5685");
 
 int16_t tempValue = 0;
 
@@ -68,6 +69,7 @@ PrimaryService::PrimaryService(BLE &ble,
                                Kx64Sensor &kx64,
 #endif //TARGET_FUTURE_SEQUANA
                                Sps30Sensor &sps30,
+                               LightSensor &lsc,
                                ComboEnvSensor &combo,
                                AirQSensor &airq
 #ifdef TARGET_FUTURE_SEQUANA
@@ -84,6 +86,9 @@ PrimaryService::PrimaryService(BLE &ble,
         _particulateMatterMeasurement(ble,
                                       UUID_PARTICULATE_MATTER_CHAR,
                                       sps30),
+        _lightSensorCalibrator(ble,
+                                UUID_SEQUANA_LIGHT_SENSOR_CONTROL_CHAR,
+                                lsc),
         _comboEnvMeasurement(ble,
                              comboEnvSensorCharacteristics,
                              combo),

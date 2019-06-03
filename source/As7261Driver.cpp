@@ -20,7 +20,7 @@
 
 #define NUM_RETRIES     10
 
-
+#if 0
 /* Default conversion matrix values */
 static const double Color_Conv_Mtx[3][3] = {
 //
@@ -42,6 +42,12 @@ static const double Color_Conv_Mtx[3][3] = {
     -0.969256,  1.875992,  0.041556,
     0.055648, -0.204043,  1.057311
 };
+#endif
+
+static const double target_def[3][3] = {{135,42,23}, {34,121,45}, {3,101,171}};
+
+const As7261Driver::ColorMatrix As7261Driver::_target_data(target_def);
+
 
 
 int As7261Driver::read_phy_reg(PhyReg reg, uint8_t &value)
@@ -135,6 +141,116 @@ As7261Driver::Status As7261Driver::write_register(VirtualReg reg, uint8_t value)
 }
 
 
+As7261Driver::Status As7261Driver::set_calibrate(int color)
+{
+    uint32_t    val;
+    double      x, y, z;
+    Status      status;
+
+    // read color coefficient X
+    if ((status = read_value(COLOR_X, COLOR_REG_SIZE, val)) != STATUS_OK) {
+        return status;
+    }
+    x = *reinterpret_cast<float*>(&val);
+    printf("as7261: color X=0x%lx (%f)\n", val, x);
+    x = x < 0.0 ? 0.0 : x;
+
+    // read color coefficient Y
+    if ((status = read_value(COLOR_Y, COLOR_REG_SIZE, val)) != STATUS_OK) {
+        return status;
+    }
+    y = *reinterpret_cast<float*>(&val);
+    printf("as7261: color Y=0x%lx (%f)\n", val, y);
+    y = y < 0.0 ? 0.0 : y;
+
+    // read color coefficient Z
+    if ((status = read_value(COLOR_Z, COLOR_REG_SIZE, val)) != STATUS_OK) {
+        return status;
+    }
+    z = *reinterpret_cast<float*>(&val);
+    printf("as7261: color Z=0x%lx (%f)\n", val, z);
+    z = z < 0.0 ? 0.0 : z;
+
+    _sensor_data.set_row(color, x, y, z);
+}
+
+
+As7261Driver::Status As7261Driver::calibrate(uint8_t cmd)
+{
+    Status status = STATUS_ERROR;
+
+    if (CalibrationCommand::is_value_valid(cmd)) {
+        CalibrationCommand command(static_cast<CalibrationCommand::enum_t>(cmd));
+
+        switch (command) {
+            case CalibrationCommand::NOP:
+                status = STATUS_OK;
+                break;
+
+            case CalibrationCommand::CAL_RED:
+            case CalibrationCommand::CAL_GREEN:
+            case CalibrationCommand::CAL_BLUE:
+                status = set_calibrate(command - CalibrationCommand::CAL_RED);
+                if (status == STATUS_OK) {
+                    switch (cmd) {
+                        case CalibrationCommand::CAL_RED:
+                            _cal_state |= CalibrationState::CAL_RED;
+                            break;
+                        case CalibrationCommand::CAL_GREEN:
+                            _cal_state |= CalibrationState::CAL_GREEN;
+                            break;
+                        case CalibrationCommand::CAL_BLUE:
+                            _cal_state |= CalibrationState::CAL_BLUE;
+                            break;
+                    }
+                }
+                break;
+
+            case CalibrationCommand::SET:
+                if (_cal_state.colors_ready()) {
+                    ColorMatrix calib_data(_target_data);
+
+                    calib_data.transpose();
+
+                    if (_sensor_data.det() != 0.0) {
+                        _conversion_matrix = _sensor_data.invert() * calib_data;
+                        _cal_state |= CalibrationState::COMPLETED;
+                        status = STATUS_OK;
+                    }
+                }
+                break;;
+
+            case CalibrationCommand::RESET:
+                _cal_state = CalibrationState::NONE;
+                status = STATUS_OK;
+                break;
+        }
+    }
+
+    if (status != STATUS_OK) {
+        _cal_state |= CalibrationState::ERROR;
+    }
+    return status;
+}
+
+
+void As7261Driver::set_conversion_matrix(const double m[3][3]) {
+    for (int i = 0; i < 3; ++i) {
+        _conversion_matrix.set_row(i, m[i][0], m[i][1], m[i][2]);
+    }
+    _cal_state |= CalibrationState::COMPLETED;
+}
+
+
+void As7261Driver::get_conversion_matrix(double m[3][3]) const {
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            m[i][j] = _conversion_matrix(i, j);
+        }
+    }
+}
+
+
 void As7261Driver::init_chip(void)
 {
     write_register(SETUP_CONTROL, ControlReg::RESET);
@@ -223,43 +339,20 @@ As7261Driver::Status As7261Driver::read(uint32_t &lux, uint32_t &cct, uint8_t &r
     cct = val;
 
     // Convert color from CIEXYZ into RGB color space
-    double r =  x * Color_Conv_Mtx[0][0] + y * Color_Conv_Mtx[0][1] + z * Color_Conv_Mtx[0][2];
-    double g =  x * Color_Conv_Mtx[1][0] + y * Color_Conv_Mtx[1][1] + z * Color_Conv_Mtx[1][2];
-    double b =  x * Color_Conv_Mtx[2][0] + y * Color_Conv_Mtx[2][1] + z * Color_Conv_Mtx[2][2];
+    ColorVector xyz(z, y, z);
+    ColorVector rgb = xyz * _conversion_matrix;
 
+    double r =  rgb.r();
+    double g =  rgb.g();
+    double b =  rgb.b();
 
-    printf("as7261: RGB [%8f %8f %8f]\n", r, g, b);
+    printf("as7261: RGB [%8f %8f %8f]\n", rgb.r(), rgb.g(), rgb.b());
     // Normalize to maximum of 1.0
-    if (r > b && r > g && r > 1.0f)
-    {
-       // red is too big
-       g = g / r;
-       b = b / r;
-       r = 1.0f;
-    }
-    else if (g > b && g > r && g > 1.0f)
-    {
-       // green is too big
-       r = r / g;
-       b = b / g;
-       g = 1.0f;
-    }
-    else if (b > r && b > g && b > 1.0f)
-    {
-       // blue is too big
-       r = r / b;
-       g = g / b;
-       b = 1.0f;
-    }
+    rgb.normalize();
 
-    // correction
-    r = r < 0.0 ? 0.0 : r;
-    g = g < 0.0 ? 0.0 : g;
-    b = b < 0.0 ? 0.0 : b;
-
-    red = r * 255 + 0.5;
-    green = g * 255 + 0.5;
-    blue = b * 255 + 0.5;
+    red = rgb.r() * 255 + 0.5;
+    green = rgb.g() * 255 + 0.5;
+    blue = rgb.b() * 255 + 0.5;
 
     double sum = x + y + z;
     printf("as7261: xzY color: x=%3.2f y=%3.2f Y=%f\n", x/sum, z/sum, y);

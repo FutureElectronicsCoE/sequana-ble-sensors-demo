@@ -28,6 +28,7 @@
 #include "SequanaPrimaryService.h"
 #include "kx64.h"
 #include "sps30.h"
+#include "LightSensor.h"
 #include "ComboEnvSensor.h"
 #include "AirQSensor.h"
 
@@ -62,7 +63,8 @@ Kx64Sensor      kx64(spi1, P9_5);
 #endif //TARGET_FUTURE_SEQUANA
 
 Sps30Sensor     sps30(uart1);
-ComboEnvSensor  combo(i2c1, AS7261_ADDR, HS3001_ADDR, P10_5, P10_4);
+LightSensor     light_sensor(i2c1, AS7261_ADDR);
+ComboEnvSensor  combo(i2c1, HS3001_ADDR, P10_5, P10_4, light_sensor);
 AirQSensor      airq(i2c1, ZMOD44XX_ADDR, zmod1_reset, SCD30_ADDR);
 RGBLedActuator  led_rgb;
 
@@ -224,6 +226,7 @@ int main()
                                                       kx64,
 #endif //TARGET_FUTURE_SEQUANA
                                                       sps30,
+                                                      light_sensor,
                                                       combo,
                                                       airq,
                                                       led_rgb);
@@ -237,6 +240,7 @@ int main()
     kx64.start(event_queue);
 #endif //TARGET_FUTURE_SEQUANA
     sps30.start(event_queue);
+    light_sensor.start(event_queue);
     combo.start(event_queue);
     airq.start(event_queue);
     led_rgb.start(event_queue);

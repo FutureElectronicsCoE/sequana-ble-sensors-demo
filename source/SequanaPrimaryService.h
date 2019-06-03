@@ -24,6 +24,7 @@
 #include "ActuatorCharacteristic.h"
 #include "Kx64.h"
 #include "Sps30.h"
+#include "LightSensor.h"
 #include "ComboEnvSensor.h"
 #include "AirQSensor.h"
 #include "RGBLedActuator.h"
@@ -34,6 +35,9 @@ namespace sequana {
 typedef CharBuffer<Kx64Value, 12>   Kx64CharBuffer;
 
 typedef CharBuffer<Sps30Value, 12>  Sps30CharBuffer;
+
+typedef CharBuffer<LightSensorCalibrationValue, 3> LightSensorCharBuffer;
+
 
 #define SEQUANA_INFO_MAX_LEN        250
 
@@ -108,6 +112,7 @@ public:
                    Kx64Sensor &accmag_sensor,
 #endif //TARGET_FUTURE_SEQUANA
                    Sps30Sensor &partmatter_sensor,
+                   LightSensor &light_sensor,
                    ComboEnvSensor &combo_env_sensor,
                    AirQSensor &airq_sensor
 #ifdef TARGET_FUTURE_SEQUANA
@@ -127,6 +132,7 @@ protected:
     SensorMultiCharacteristic<2, Kx64CharBuffer, Kx64Value>         _accMagSensorMeasurement;
 #endif //TARGET_FUTURE_SEQUANA
     SensorCharacteristic<Sps30CharBuffer, Sps30Value>               _particulateMatterMeasurement;
+    ActuatorCharacteristic<LightSensorCharBuffer, LightSensorCalibrationValue> _lightSensorCalibrator;
     SensorMultiCharacteristic<2, ComboEnvCharBuffer, ComboEnvValue> _comboEnvMeasurement;
     SensorCharacteristic<AirQCharBuffer, AirQValue>                 _airQMeasurement;
 #ifdef TARGET_FUTURE_SEQUANA
