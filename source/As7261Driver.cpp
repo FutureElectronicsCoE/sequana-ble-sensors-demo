@@ -20,29 +20,6 @@
 
 #define NUM_RETRIES     10
 
-#if 0
-/* Default conversion matrix values */
-static const double Color_Conv_Mtx[3][3] = {
-//
-//     1.756297, 0.253231, -0.657701,
-//    -9.070800, 12.06207, -1.610928,
-//    -0.735217, 0.987702, 0.319168
-//*/
-//
-//     2.3638081, -0.8676030, -0.4988161
-//    -0.5005940,  1.3962369,  0.1047562,
-//     0.0141712, -0.0306400,  1.2323842
-//
-//
-//     2.3706743, -0.9000405, -0.4706338,
-//    -0.5138850,  1.4253036,  0.0885814,
-//     0.0052982, -0.0146949,  1.0093968
-//
-    3.240479, -1.537150, -0.498535,
-    -0.969256,  1.875992,  0.041556,
-    0.055648, -0.204043,  1.057311
-};
-#endif
 
 static const double target_def[3][3] = {{135,42,23}, {34,121,45}, {3,101,171}};
 
@@ -238,14 +215,19 @@ void As7261Driver::set_conversion_matrix(const double m[3][3]) {
     for (int i = 0; i < 3; ++i) {
         _conversion_matrix.set_row(i, m[i][0], m[i][1], m[i][2]);
     }
+    // We keep matrix transposed internally, as our implementation
+    // of color transform has multiplication arguments switched
+    // ( xyz * M instead of M * xyzT ).
+    _conversion_matrix.transpose();
     _cal_state |= CalibrationState::COMPLETED;
 }
 
 
 void As7261Driver::get_conversion_matrix(double m[3][3]) const {
+    // Transpose matrix while copying.
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
-            m[i][j] = _conversion_matrix(i, j);
+            m[i][j] = _conversion_matrix(j, i);
         }
     }
 }
@@ -339,7 +321,7 @@ As7261Driver::Status As7261Driver::read(uint32_t &lux, uint32_t &cct, uint8_t &r
     cct = val;
 
     // Convert color from CIEXYZ into RGB color space
-    ColorVector xyz(z, y, z);
+    ColorVector xyz(x, y, z);
     ColorVector rgb = xyz * _conversion_matrix;
 
     double r =  rgb.r();
@@ -355,7 +337,7 @@ As7261Driver::Status As7261Driver::read(uint32_t &lux, uint32_t &cct, uint8_t &r
     blue = rgb.b() * 255 + 0.5;
 
     double sum = x + y + z;
-    printf("as7261: xzY color: x=%3.2f y=%3.2f Y=%f\n", x/sum, z/sum, y);
+    printf("as7261: xyY color: x=%3.2f y=%3.2f Y=%f\n", x/sum, y/sum, y);
     printf("as7261: lux=0x%04lx, cct=0x%04lx, r=%u, g=%u, b=%u\n", lux, cct, red, green, blue);
     return STATUS_OK;
 }

@@ -57,7 +57,7 @@ int LightSensor::set_value(LightSensorCalibrationValue& value)
     As7261Driver::Status status;
 
     _value = value;
-    //printf("RGB color received (R/G/B): %u, %u, %u\n", value.color.r, value.color.g, value.color.b);
+    printf("RGB calibration command: %u, %u, %u\n", value.command, value.backlight, value.state);
 
     // Set backlight mode.
     status = _as_driver.led_on(value.backlight);
@@ -70,6 +70,7 @@ int LightSensor::set_value(LightSensorCalibrationValue& value)
     _value.state = _as_driver.get_calibration_state();
     // Make sure status gets passed to client.
     update_notify();
+    printf("Execution status: 0x%02x\n", _value.state);
 
     return (status == As7261Driver::STATUS_OK)? 0 : (-1);
 }

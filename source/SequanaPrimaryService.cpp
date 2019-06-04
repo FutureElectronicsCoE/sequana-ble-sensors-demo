@@ -104,17 +104,18 @@ PrimaryService::PrimaryService(BLE &ble,
 {
         GattCharacteristic *sequanaChars[] = {
 #ifdef TARGET_FUTURE_SEQUANA
-             _accMagSensorMeasurement.get_characteristic(0),
-             _accMagSensorMeasurement.get_characteristic(1),
+            _accMagSensorMeasurement.get_characteristic(0),
+            _accMagSensorMeasurement.get_characteristic(1),
 #endif //TARGET_FUTURE_SEQUANA
-             _particulateMatterMeasurement.get_characteristic(),
-             _comboEnvMeasurement.get_characteristic(0),
-             _comboEnvMeasurement.get_characteristic(1),
-             _airQMeasurement.get_characteristic(),
+            _particulateMatterMeasurement.get_characteristic(),
+            _comboEnvMeasurement.get_characteristic(0),
+            _comboEnvMeasurement.get_characteristic(1),
+            _airQMeasurement.get_characteristic(),
 #ifdef TARGET_FUTURE_SEQUANA
-             _ledState.get_characteristic(),
-#endif // TARGET_FUTURE_SEQUANA            ,
-             &_info
+            _ledState.get_characteristic(),
+#endif // TARGET_FUTURE_SEQUANA
+            _lightSensorCalibrator.get_characteristic(),
+            &_info
         };
 
         GattService sequanaService(UUID_SEQUANA_PRIMARY_SERVICE, sequanaChars, sizeof(sequanaChars) / sizeof(GattCharacteristic *));
@@ -130,6 +131,10 @@ void PrimaryService::on_data_written(const GattWriteCallbackParams *params)
     if ((params->handle == _ledState.get_characteristic()->getValueHandle()) && (params->len == 6)) {
         RGBLedValue value(params->data);
         _ledState.set_actuator(value);
+    } else
+    if ((params->handle == _lightSensorCalibrator.get_characteristic()->getValueHandle()) && (params->len == 3)) {
+        LightSensorCalibrationValue value(params->data);
+        _lightSensorCalibrator.set_actuator(value);
     }
 }
 #endif // TARGET_FUTURE_SEQUANA

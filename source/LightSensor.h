@@ -27,11 +27,17 @@ namespace sequana {
  *
  */
 struct LightSensorCalibrationValue {
-public:
-public:
     uint8_t     command;                //<! r/w calibration command
     uint8_t     backlight;              //<! r/w backlight on/off
     uint8_t     state;                  //<! r/o current state
+
+    LightSensorCalibrationValue(const uint8_t *data) :
+        command(data[0]),
+        backlight(data[1]),
+        state(data[2])
+    {}
+
+    LightSensorCalibrationValue() {}
 };
 
 
