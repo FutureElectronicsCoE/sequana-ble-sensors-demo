@@ -16,6 +16,7 @@
 
 #include <mbed.h>
 #include "LightSensor.h"
+#include "kvstore_global_api.h"
 
 using namespace sequana;
 
@@ -43,11 +44,24 @@ static const double default_color_conv[3][3] = {
 };
 
 
+static const char matrix_key[] = "/kv/light_sensor_matrix";
+
+
 /** Initialize driver and setup periodic sensor updates.
  */
 void LightSensor::start(EventQueue& ev_queue)
 {
-    _as_driver.set_conversion_matrix(default_color_conv);
+    double m[3][3];
+    size_t actual_size = 0;
+
+    // Look for conversion matrix within NV storage.
+    int res = kv_get(matrix_key, m, sizeof(m), &actual_size);
+    if (res == MBED_SUCCESS && actual_size == sizeof(m)) {
+        printf("Light Sensor: conversion matrix retrieved from NVStorage\n");
+        _as_driver.set_conversion_matrix(m);
+    } else {
+        _as_driver.set_conversion_matrix(default_color_conv);
+    }
     _as_driver.init_chip();
     _as_driver.start_measurement();
 }
@@ -57,7 +71,7 @@ int LightSensor::set_value(LightSensorCalibrationValue& value)
     As7261Driver::Status status;
 
     _value = value;
-    printf("RGB calibration command: %u, %u, %u\n", value.command, value.backlight, value.state);
+    printf("Light Sensor: RGB calibration command: %u, %u, %u\n", value.command, value.backlight, value.state);
 
     // Set backlight mode.
     status = _as_driver.led_on(value.backlight);
@@ -70,7 +84,13 @@ int LightSensor::set_value(LightSensorCalibrationValue& value)
     _value.state = _as_driver.get_calibration_state();
     // Make sure status gets passed to client.
     update_notify();
-    printf("Execution status: 0x%02x\n", _value.state);
+    printf("Light Sensor: Command execution status: 0x%02x\n", _value.state);
+
+    if (_value.command == As7261Driver::CalibrationCommand::SET) {
+        double m[3][3];
+        _as_driver.get_conversion_matrix(m);
+         int res = kv_set(matrix_key, m, sizeof(m), 0);
+    }
 
     return (status == As7261Driver::STATUS_OK)? 0 : (-1);
 }
