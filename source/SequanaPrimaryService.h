@@ -27,6 +27,7 @@
 #include "ComboEnvSensor.h"
 #include "AirQSensor.h"
 #include "RGBLedActuator.h"
+#include "OccupancySensor.h"
 
 namespace sequana {
 
@@ -34,6 +35,9 @@ namespace sequana {
 typedef CharBuffer<Kx64Value, 12>   Kx64CharBuffer;
 
 typedef CharBuffer<Sps30Value, 12>  Sps30CharBuffer;
+
+typedef CharBuffer<uint8_t, 1>      OccupancyCharBuffer;
+
 
 #define SEQUANA_INFO_MAX_LEN        250
 
@@ -106,7 +110,8 @@ public:
 #endif //TARGET_FUTURE_SEQUANA
                    Sps30Sensor &partmatter_sensor,
                    ComboEnvSensor &combo_env_sensor,
-                   AirQSensor &airq_sensor
+                   AirQSensor &airq_sensor,
+                   OccupancySensor &occupancy_sensor
 #ifdef TARGET_FUTURE_SEQUANA
                     ,
                    RGBLedActuator &rgb_led_actuator
@@ -126,6 +131,7 @@ protected:
     SensorCharacteristic<Sps30CharBuffer, Sps30Value>               _particulateMatterMeasurement;
     SensorMultiCharacteristic<2, ComboEnvCharBuffer, ComboEnvValue> _comboEnvMeasurement;
     SensorCharacteristic<AirQCharBuffer, AirQValue>                 _airQMeasurement;
+    SensorCharacteristic<OccupancyCharBuffer, uint8_t>              _occupancyDetection;
 #ifdef TARGET_FUTURE_SEQUANA
     ActuatorCharacteristic<RGBLedCharBuffer, RGBLedValue>           _ledState;
 #endif //TARGET_FUTURE_SEQUANA

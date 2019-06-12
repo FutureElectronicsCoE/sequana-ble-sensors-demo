@@ -30,6 +30,7 @@
 #include "sps30.h"
 #include "ComboEnvSensor.h"
 #include "AirQSensor.h"
+#include "OccupancySensor.h"
 
 #ifndef MCU_PSoC6_M0
 
@@ -65,6 +66,7 @@ Sps30Sensor     sps30(uart1);
 ComboEnvSensor  combo(i2c1, AS7261_ADDR, HS3001_ADDR, P10_5, P10_4);
 AirQSensor      airq(i2c1, ZMOD44XX_ADDR, zmod1_reset, SCD30_ADDR);
 RGBLedActuator  led_rgb;
+OccupancySensor occupancy(A2, A3);
 
 class SequanaDemo : ble::Gap::EventHandler {
 public:
@@ -226,6 +228,7 @@ int main()
                                                       sps30,
                                                       combo,
                                                       airq,
+                                                      occupancy,
                                                       led_rgb);
 
     SequanaDemo demo(ble, event_queue, *sequana_service_ptr);
@@ -239,6 +242,7 @@ int main()
     sps30.start(event_queue);
     combo.start(event_queue);
     airq.start(event_queue);
+    occupancy.start(event_queue);
     led_rgb.start(event_queue);
     event_queue.dispatch_forever();
 

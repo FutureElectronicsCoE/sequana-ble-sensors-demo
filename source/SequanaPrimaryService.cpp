@@ -34,8 +34,8 @@ UUID UUID_AIR_QUALITY_CHAR("f79B4EBA-1B6E-41F2-8D65-D346B4EF5685");
 UUID UUID_PARTICULATE_MATTER_CHAR("F79B4EBB-1B6B-41F2-8D65-D346B4EF5685");
 UUID UUID_OTHER_ENV_CHAR("F79B4EBC-1B6E-41F2-8D65-D346B4EF5685");
 UUID UUID_SEQUANA_INFO_CHAR("F79B4EB9-1B6E-41F2-8D65-D346B4EF5685");
+UUID UUID_OCCUPANCY_CHAR("F79B4EBE-1B6E-41F2-8D65-D346B4EF5685");
 
-int16_t tempValue = 0;
 
 SingleCharParams accMagSensorCharacteristics[2] = {
     { &UUID_ACCELLEROMETER_CHAR, 0, 6 },
@@ -69,7 +69,8 @@ PrimaryService::PrimaryService(BLE &ble,
 #endif //TARGET_FUTURE_SEQUANA
                                Sps30Sensor &sps30,
                                ComboEnvSensor &combo,
-                               AirQSensor &airq
+                               AirQSensor &airq,
+                               OccupancySensor &occupancy
 #ifdef TARGET_FUTURE_SEQUANA
                                ,
                                RGBLedActuator &rgb_led
@@ -90,6 +91,9 @@ PrimaryService::PrimaryService(BLE &ble,
         _airQMeasurement(ble,
                          UUID_AIR_QUALITY_CHAR,
                          airq),
+        _occupancyDetection(ble,
+                            UUID_OCCUPANCY_CHAR,
+                            occupancy),
 #ifdef TARGET_FUTURE_SEQUANA
         _ledState(ble,
                   UUID_RGB_LED_CHAR,
@@ -106,6 +110,7 @@ PrimaryService::PrimaryService(BLE &ble,
              _comboEnvMeasurement.get_characteristic(0),
              _comboEnvMeasurement.get_characteristic(1),
              _airQMeasurement.get_characteristic(),
+             _occupancyDetection.get_characteristic(),
 #ifdef TARGET_FUTURE_SEQUANA
              _ledState.get_characteristic(),
 #endif // TARGET_FUTURE_SEQUANA            ,
